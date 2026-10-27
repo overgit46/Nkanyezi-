@@ -1,0 +1,6 @@
+{
+  "name": "Inkanyezi — For My Girl",
+  "description": "A personalized interactive digital love letter and photo keepsake crafted for Inkanyezi.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
