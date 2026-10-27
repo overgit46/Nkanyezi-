@@ -41,7 +41,7 @@ export interface DateVoucher {
 export const MEMORY_PHOTOS: MemoryPhoto[] = [
   {
     id: 'pink-feather-glow',
-    src: '/assets/aistudio/IMG-20260705-WA0020_ccebcede.jpg',
+    src: './assets/aistudio/IMG-20260705-WA0020_ccebcede.jpg',
     alt: 'Nkanyezi smiling warmly in a pink feathered dress and black faux-fur coat',
     title: 'Main Character Energy',
     season: 'July Evening · Film Flash',
@@ -54,7 +54,7 @@ export const MEMORY_PHOTOS: MemoryPhoto[] = [
   },
   {
     id: 'golden-mirror-hug',
-    src: '/assets/aistudio/IMG-20261009-WA0082_9e5a90c3.jpg',
+    src: './assets/aistudio/IMG-20261009-WA0082_9e5a90c3.jpg',
     alt: 'Warm mirror photo of us hugging closely in white tops and denim',
     title: 'Right Where I Belong',
     season: 'October · Golden Hour',
@@ -67,7 +67,7 @@ export const MEMORY_PHOTOS: MemoryPhoto[] = [
   },
   {
     id: 'sweet-kiss-selfie',
-    src: '/assets/aistudio/IMG-20261002-WA0050_4923e750.jpg',
+    src: './assets/aistudio/IMG-20261002-WA0050_4923e750.jpg',
     alt: 'Nkanyezi with side-swept braids blowing a playful kiss toward the camera',
     title: 'Sending One Right Back',
     season: 'October · Morning Light',
@@ -79,7 +79,7 @@ export const MEMORY_PHOTOS: MemoryPhoto[] = [
   },
   {
     id: 'blue-sky-us',
-    src: '/assets/aistudio/20260814_132624_fbb80b8f.jpg',
+    src: './assets/aistudio/20260814_132624_fbb80b8f.jpg',
     alt: 'Sunny outdoor selfie of the two of us smiling playfully under a bright blue sky',
     title: 'Blue Skies & Goofy Grins',
     season: 'August · Clear Afternoon',
@@ -92,7 +92,7 @@ export const MEMORY_PHOTOS: MemoryPhoto[] = [
   },
   {
     id: 'radiant-smile-braids',
-    src: '/assets/aistudio/IMG-20261002-WA0044_bb33cdfb.jpg',
+    src: './assets/aistudio/IMG-20261002-WA0044_bb33cdfb.jpg',
     alt: 'Close-up portrait of Nkanyezi smiling brightly with her hand resting gently on her cheek',
     title: 'Pure Warmth',
     season: 'October · Soft Daylight',
@@ -104,7 +104,7 @@ export const MEMORY_PHOTOS: MemoryPhoto[] = [
   },
   {
     id: 'velvet-profile',
-    src: '/assets/aistudio/IMG-20260705-WA0021_e20e865f.jpg',
+    src: './assets/aistudio/IMG-20260705-WA0021_e20e865f.jpg',
     alt: 'Side profile portrait of Nkanyezi in a black fur coat with sleek curly ponytail',
     title: 'Grace in Every Angle',
     season: 'July Evening · Portrait',

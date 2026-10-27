@@ -39,6 +39,14 @@ test('all copy strictly uses her exact name Nkanyezi and never standalone Englis
 
   const combined = allStrings.join(' ');
   assert.equal(combined.includes('Nkanyezi'), true);
+
+  for (const photo of MEMORY_PHOTOS) {
+    assert.equal(
+      photo.src.startsWith('./assets/'),
+      true,
+      `Expected relative path './assets/...' for GitHub Pages compatibility, got: "${photo.src}"`
+    );
+  }
 });
 
 test('filterMemoriesByCategory returns expected counts for all, her, and us', () => {
