@@ -1,0 +1,353 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Global Safety Net: Default-deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Hardened Global Primitives (strictly bottom-up: zero forward references)
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidRoomCode(code) {
+      return code is string && code.size() >= 4 && code.size() <= 16 && code.matches('^[A-Z0-9]+$');
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 64 && id.matches('^[a-zA-Z0-9_-]+$');
+    }
+
+    function isValidIdOrEmpty(id) {
+      return id is string && id.size() <= 64 && id.matches('^[a-zA-Z0-9_-]*$');
+    }
+
+    function isValidUid(uid) {
+      return uid is string && uid.size() >= 1 && uid.size() <= 128 && uid.matches('^[a-zA-Z0-9_-]+$');
+    }
+
+    function isValidUidOrEmpty(uid) {
+      return uid is string && uid.size() <= 128 && uid.matches('^[a-zA-Z0-9_-]*$');
+    }
+
+    function isValidTttMap(t) {
+      let tk = t.keys();
+      let keys = ['mode', 'board', 'order', 'winner'];
+      return t is map
+        && tk.hasAll(keys)
+        && tk.hasOnly(keys)
+        && t.mode in ['classic', 'bolt']
+        && t.board is string && t.board.size() == 9 && t.board.matches('^[.XO]{9}$')
+        && t.order is string && t.order.size() <= 12 && t.order.matches('^[0-8|]*$')
+        && t.winner in ['', 'X', 'O', 'draw'];
+    }
+
+    function isValidCardsMap(c) {
+      let ck = c.keys();
+      let keys = [
+        'variant', 'seatCount', 'deck', 'activeSuit',
+        'direction', 'pendingDraw', 'trickScores', 'lastAction', 'winnerSeat'
+      ];
+      return c is map
+        && ck.hasAll(keys)
+        && ck.hasOnly(keys)
+        && c.variant in ['crazy8', 'switch', 'hearts']
+        && c.seatCount in [2, 4]
+        && c.deck is list && c.deck.size() <= 64 && (c.deck.size() == 0 || (c.deck[0] is string && c.deck[0].size() <= 12))
+        && c.activeSuit in ['S', 'H', 'D', 'C']
+        && c.direction in [-1, 1]
+        && c.pendingDraw is number && c.pendingDraw >= 0 && c.pendingDraw <= 16
+        && c.trickScores is list && c.trickScores.size() == 4 && c.trickScores[0] is number
+        && c.lastAction is string && c.lastAction.size() <= 120
+        && c.winnerSeat in [-1, 0, 1, 2, 3];
+    }
+
+    function isValidCelebMap(cb) {
+      let cbk = cb.keys();
+      let keys = [
+        'clueGiverUid', 'roundId', 'category',
+        'questionCount', 'lastQA', 'revealedName', 'outcome'
+      ];
+      return cb is map
+        && cbk.hasAll(keys)
+        && cbk.hasOnly(keys)
+        && isValidUidOrEmpty(cb.clueGiverUid)
+        && isValidIdOrEmpty(cb.roundId)
+        && cb.category is string && cb.category.size() <= 40
+        && cb.questionCount is number && cb.questionCount >= 0 && cb.questionCount <= 200
+        && cb.lastQA is string && cb.lastQA.size() <= 160
+        && cb.revealedName is string && cb.revealedName.size() <= 80
+        && cb.outcome in ['guessing', 'guessed', 'gave_up'];
+    }
+
+    // Validation Blueprint: GameRoom (Anti-Update-Gap)
+    function isValidGameRoom(data) {
+      let d = data;
+      let dk = d.keys();
+      let keys = [
+        'roomCode', 'hostUid', 'hostName', 'guestUid', 'guestName',
+        'activeGame', 'roomStatus', 'turnSeat', 'hostScore', 'guestScore', 'roundNumber',
+        'ttt', 'cards', 'celeb', 'createdAt', 'updatedAt'
+      ];
+      return d is map
+        && dk.hasAll(keys)
+        && dk.hasOnly(keys)
+        && isValidRoomCode(d.roomCode)
+        && isValidUid(d.hostUid)
+        && d.hostName is string && d.hostName.size() >= 1 && d.hostName.size() <= 40
+        && isValidUidOrEmpty(d.guestUid)
+        && d.guestName is string && d.guestName.size() <= 40
+        && d.activeGame in ['tictactoe', 'cards', 'celebrity']
+        && d.roomStatus in ['waiting', 'playing', 'round_over', 'closed']
+        && d.turnSeat in [0, 1, 2, 3]
+        && d.hostScore is number && d.hostScore >= 0 && d.hostScore <= 9999
+        && d.guestScore is number && d.guestScore >= 0 && d.guestScore <= 9999
+        && d.roundNumber is number && d.roundNumber >= 1 && d.roundNumber <= 9999
+        && isValidTttMap(d.ttt)
+        && isValidCardsMap(d.cards)
+        && isValidCelebMap(d.celeb)
+        && d.createdAt is timestamp
+        && d.updatedAt is timestamp;
+    }
+
+    // Validation Blueprint: CelebritySecret
+    function isValidCelebritySecret(data) {
+      let d = data;
+      let sk = d.keys();
+      let keys = [
+        'roomId', 'roundId', 'clueGiverUid', 'celebrityId',
+        'celebrityName', 'category', 'hints', 'createdAt'
+      ];
+      return d is map
+        && sk.hasAll(keys)
+        && sk.hasOnly(keys)
+        && isValidRoomCode(d.roomId)
+        && isValidId(d.roundId)
+        && isValidUid(d.clueGiverUid)
+        && isValidId(d.celebrityId)
+        && d.celebrityName is string && d.celebrityName.size() >= 1 && d.celebrityName.size() <= 80
+        && d.category is string && d.category.size() >= 1 && d.category.size() <= 40
+        && d.hints is list && d.hints.size() >= 1 && d.hints.size() <= 5 && d.hints[0] is string && d.hints[0].size() <= 120
+        && d.createdAt is timestamp;
+    }
+
+    // Validation Blueprint: RoomLetter (Anti-Update-Gap)
+    function isValidRoomLetter(data, roomId) {
+      let d = data;
+      let lk = d.keys();
+      let keys = [
+        'roomId', 'authorUid', 'authorName', 'authorRole',
+        'title', 'content', 'mood', 'createdAt', 'updatedAt'
+      ];
+      return d is map
+        && lk.hasAll(keys)
+        && lk.hasOnly(keys)
+        && d.roomId == roomId
+        && isValidUid(d.authorUid)
+        && d.authorName is string && d.authorName.size() >= 1 && d.authorName.size() <= 40
+        && d.authorRole in ['host', 'guest']
+        && d.title is string && d.title.size() <= 80
+        && d.content is string && d.content.size() >= 1 && d.content.size() <= 3000
+        && d.mood is string && d.mood.size() >= 1 && d.mood.size() <= 40
+        && d.createdAt is timestamp
+        && d.updatedAt is timestamp;
+    }
+
+    function isCreateRoomOwnershipValid(roomId) {
+      let d = request.resource.data;
+      return d.roomCode == roomId
+        && d.hostUid == request.auth.uid
+        && d.guestUid == ''
+        && d.guestName == ''
+        && d.roomStatus == 'waiting'
+        && d.createdAt == request.time
+        && d.updatedAt == request.time;
+    }
+
+    function isUpdateRoomTransitionValid() {
+      let d = request.resource.data;
+      let e = resource.data;
+      let diffKeys = d.diff(e).affectedKeys();
+      let uid = request.auth.uid;
+      return e.roomStatus != 'closed'
+        && d.roomCode == e.roomCode
+        && d.hostUid == e.hostUid
+        && d.hostName == e.hostName
+        && d.createdAt == e.createdAt
+        && d.updatedAt == request.time
+        && (
+          // Action 1: Guest Joins Open Room
+          (
+            e.roomStatus == 'waiting'
+            && e.guestUid == ''
+            && uid != e.hostUid
+            && d.guestUid == uid
+            && d.guestName.size() >= 1
+            && d.roomStatus == 'playing'
+            && diffKeys.hasOnly(['guestUid', 'guestName', 'roomStatus', 'updatedAt'])
+          )
+          ||
+          // Action 2: Active Room Member Gameplay Mutation
+          (
+            (uid == e.hostUid || (e.guestUid != '' && uid == e.guestUid))
+            && d.roomStatus in ['waiting', 'playing', 'round_over']
+            && d.guestUid == e.guestUid
+            && d.guestName == e.guestName
+            && diffKeys.hasOnly([
+              'activeGame', 'roomStatus', 'turnSeat', 'hostScore', 'guestScore',
+              'roundNumber', 'ttt', 'cards', 'celeb', 'updatedAt'
+            ])
+          )
+          ||
+          // Action 3: Host Closes Room (Terminal Transition)
+          (
+            uid == e.hostUid
+            && d.roomStatus == 'closed'
+            && diffKeys.hasOnly(['roomStatus', 'updatedAt'])
+          )
+        );
+    }
+
+    match /rooms/{roomId} {
+      allow get: if isVerifiedUser()
+        && isValidRoomCode(roomId)
+        && (
+          existing().hostUid == request.auth.uid
+          || (existing().guestUid != '' && existing().guestUid == request.auth.uid)
+          || existing().roomStatus == 'waiting'
+        );
+
+      allow list: if false;
+
+      allow create: if isVerifiedUser()
+        && isValidRoomCode(roomId)
+        && isValidGameRoom(incoming())
+        && isCreateRoomOwnershipValid(roomId);
+
+      allow update: if isVerifiedUser()
+        && isValidRoomCode(roomId)
+        && isValidGameRoom(incoming())
+        && isUpdateRoomTransitionValid();
+
+      allow delete: if false;
+
+      // Subcollection: Synchronized Shared Couple Letters
+      match /letters/{letterId} {
+        function isMemberOfParentRoom(roomPath) {
+          let parentRoom = get(roomPath).data;
+          let uid = request.auth.uid;
+          return parentRoom.roomStatus != 'closed'
+            && (parentRoom.hostUid == uid || (parentRoom.guestUid != '' && parentRoom.guestUid == uid));
+        }
+
+        function canMemberAccessLetters() {
+          let roomPath = /databases/$(database)/documents/rooms/$(roomId);
+          return exists(roomPath) && isMemberOfParentRoom(roomPath);
+        }
+
+        function isLetterAuthor(expectedUid) {
+          return request.auth.uid == expectedUid;
+        }
+
+        allow get, list: if isVerifiedUser()
+          && isValidRoomCode(roomId)
+          && canMemberAccessLetters();
+
+        allow create: if isVerifiedUser()
+          && isValidRoomCode(roomId)
+          && isValidId(letterId)
+          && isValidRoomLetter(incoming(), roomId)
+          && incoming().authorUid == request.auth.uid
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time
+          && canMemberAccessLetters();
+
+        allow update: if isVerifiedUser()
+          && isValidRoomCode(roomId)
+          && isValidId(letterId)
+          && isValidRoomLetter(incoming(), roomId)
+          && existing().authorUid == request.auth.uid
+          && incoming().authorUid == existing().authorUid
+          && incoming().authorRole == existing().authorRole
+          && incoming().roomId == existing().roomId
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasOnly(['title', 'content', 'mood', 'updatedAt'])
+          && canMemberAccessLetters();
+
+        allow delete: if isVerifiedUser()
+          && isValidRoomCode(roomId)
+          && isValidId(letterId)
+          && isLetterAuthor(existing().authorUid)
+          && canMemberAccessLetters();
+      }
+
+      // Subcollection: Isolated Celebrity Secret Cards (strictly bottom-up helper order)
+      match /secrets/{roundId} {
+        function isMemberPermittedSecretRead(roomPath, clueGiverUid) {
+          let parentRoom = get(roomPath).data;
+          let uid = request.auth.uid;
+          return parentRoom.roomStatus != 'closed'
+            && (parentRoom.hostUid == uid || (parentRoom.guestUid != '' && parentRoom.guestUid == uid))
+            && (clueGiverUid == uid || parentRoom.celeb.outcome in ['guessed', 'gave_up']);
+        }
+
+        function canMemberReadSecret(clueGiverUid) {
+          let roomPath = /databases/$(database)/documents/rooms/$(roomId);
+          return exists(roomPath) && isMemberPermittedSecretRead(roomPath, clueGiverUid);
+        }
+
+        function isParentSyncedAfterSecretCreate(roomPath) {
+          let roomAfter = getAfter(roomPath).data;
+          let uid = request.auth.uid;
+          return roomAfter.roomStatus != 'closed'
+            && (roomAfter.hostUid == uid || (roomAfter.guestUid != '' && roomAfter.guestUid == uid))
+            && roomAfter.celeb.roundId == roundId
+            && roomAfter.celeb.clueGiverUid == uid
+            && roomAfter.celeb.outcome == 'guessing'
+            && roomAfter.celeb.revealedName == '';
+        }
+
+        function isAtomicSecretCreateValid() {
+          let roomPath = /databases/$(database)/documents/rooms/$(roomId);
+          return exists(roomPath)
+            && existsAfter(roomPath)
+            && isParentSyncedAfterSecretCreate(roomPath);
+        }
+
+        allow get: if isVerifiedUser()
+          && isValidRoomCode(roomId)
+          && isValidId(roundId)
+          && canMemberReadSecret(existing().clueGiverUid);
+
+        allow list: if false;
+
+        allow create: if isVerifiedUser()
+          && isValidRoomCode(roomId)
+          && isValidId(roundId)
+          && isValidCelebritySecret(incoming())
+          && incoming().roomId == roomId
+          && incoming().roundId == roundId
+          && incoming().clueGiverUid == request.auth.uid
+          && incoming().createdAt == request.time
+          && isAtomicSecretCreateValid();
+
+        allow update, delete: if false;
+      }
+    }
+  }
+}

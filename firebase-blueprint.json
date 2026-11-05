@@ -1,0 +1,263 @@
+{
+  "entities": {
+    "GameRoom": {
+      "title": "GameRoom",
+      "description": "Real-time multiplayer couple game room state for Tic-Tac-Toe, 2-4 Player Card Lounge, and Guess the Celebrity using native Maps.",
+      "type": "object",
+      "properties": {
+        "roomCode": {
+          "type": "string",
+          "description": "Alphanumeric room join code matching the document ID.",
+          "minLength": 4,
+          "maxLength": 16,
+          "pattern": "^[A-Z0-9]+$"
+        },
+        "hostUid": {
+          "type": "string",
+          "description": "Immutable Firebase Auth UID of the room creator.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_-]+$"
+        },
+        "hostName": {
+          "type": "string",
+          "description": "Display nickname of the room creator (no PII).",
+          "minLength": 1,
+          "maxLength": 40
+        },
+        "guestUid": {
+          "type": "string",
+          "description": "Firebase Auth UID of the second human player once joined, or empty string while waiting.",
+          "minLength": 0,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_-]*$"
+        },
+        "guestName": {
+          "type": "string",
+          "description": "Display nickname of the second player once joined.",
+          "minLength": 0,
+          "maxLength": 40
+        },
+        "activeGame": {
+          "type": "string",
+          "description": "Currently selected game in the room.",
+          "enum": ["tictactoe", "cards", "celebrity"],
+          "maxLength": 20
+        },
+        "roomStatus": {
+          "type": "string",
+          "description": "Lifecycle status of the room.",
+          "enum": ["waiting", "playing", "round_over", "closed"],
+          "maxLength": 20
+        },
+        "turnSeat": {
+          "type": "integer",
+          "description": "Active player seat index (0 to 3)."
+        },
+        "hostScore": {
+          "type": "integer",
+          "description": "Cumulative wins/points for the host player."
+        },
+        "guestScore": {
+          "type": "integer",
+          "description": "Cumulative wins/points for the guest player."
+        },
+        "roundNumber": {
+          "type": "integer",
+          "description": "Current 1-based round counter."
+        },
+        "ttt": {
+          "type": "object",
+          "description": "Native Map holding Tic-Tac-Toe state (mode, 9-char board pattern ^[.XO]{9}$, move order, winner)."
+        },
+        "cards": {
+          "type": "object",
+          "description": "Native Map holding Card Lounge state (variant, seatCount, bounded 52-card tagged deck list, activeSuit, direction, pendingDraw, trickScores, lastAction, winnerSeat)."
+        },
+        "celeb": {
+          "type": "object",
+          "description": "Native Map holding public Guess the Celebrity round state (clueGiverUid, roundId, category, questionCount, lastQA, revealedName, outcome)."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Immutable server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of latest state mutation."
+        }
+      },
+      "required": [
+        "roomCode",
+        "hostUid",
+        "hostName",
+        "guestUid",
+        "guestName",
+        "activeGame",
+        "roomStatus",
+        "turnSeat",
+        "hostScore",
+        "guestScore",
+        "roundNumber",
+        "ttt",
+        "cards",
+        "celeb",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "CelebritySecret": {
+      "title": "CelebritySecret",
+      "description": "Isolated secret celebrity card readable only by the designated clue-giver while guessing is active.",
+      "type": "object",
+      "properties": {
+        "roomId": {
+          "type": "string",
+          "description": "Parent room ID.",
+          "minLength": 4,
+          "maxLength": 16,
+          "pattern": "^[A-Z0-9]+$"
+        },
+        "roundId": {
+          "type": "string",
+          "description": "Unique round secret document ID.",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[a-zA-Z0-9_-]+$"
+        },
+        "clueGiverUid": {
+          "type": "string",
+          "description": "UID of the player permitted to view the celebrity during active guessing.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_-]+$"
+        },
+        "celebrityId": {
+          "type": "string",
+          "description": "Slug ID of the secret celebrity.",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[a-zA-Z0-9_-]+$"
+        },
+        "celebrityName": {
+          "type": "string",
+          "description": "Full name of the secret celebrity.",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "category": {
+          "type": "string",
+          "description": "Category label of the celebrity.",
+          "minLength": 1,
+          "maxLength": 40
+        },
+        "hints": {
+          "type": "array",
+          "description": "3 quick fact prompts for the clue-giver (bounded <= 5)."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Immutable server creation timestamp."
+        }
+      },
+      "required": [
+        "roomId",
+        "roundId",
+        "clueGiverUid",
+        "celebrityId",
+        "celebrityName",
+        "category",
+        "hints",
+        "createdAt"
+      ]
+    },
+    "RoomLetter": {
+      "title": "RoomLetter",
+      "description": "Synchronized personal couple letters visible exclusively to the host and guest of the active room.",
+      "type": "object",
+      "properties": {
+        "roomId": {
+          "type": "string",
+          "description": "Parent room code matching path.",
+          "minLength": 4,
+          "maxLength": 16,
+          "pattern": "^[A-Z0-9]+$"
+        },
+        "authorUid": {
+          "type": "string",
+          "description": "UID of the letter author (host or guest).",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_-]+$"
+        },
+        "authorName": {
+          "type": "string",
+          "description": "Display name of the author.",
+          "minLength": 1,
+          "maxLength": 40
+        },
+        "authorRole": {
+          "type": "string",
+          "description": "Role of the author in the room.",
+          "enum": ["host", "guest"],
+          "maxLength": 10
+        },
+        "title": {
+          "type": "string",
+          "description": "Optional title or subject of the letter.",
+          "maxLength": 80
+        },
+        "content": {
+          "type": "string",
+          "description": "Letter body text.",
+          "minLength": 1,
+          "maxLength": 3000
+        },
+        "mood": {
+          "type": "string",
+          "description": "Mood or emotional tone tag.",
+          "minLength": 1,
+          "maxLength": 40
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Immutable server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of latest update."
+        }
+      },
+      "required": [
+        "roomId",
+        "authorUid",
+        "authorName",
+        "authorRole",
+        "title",
+        "content",
+        "mood",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/rooms/{roomId}": {
+      "schema": "GameRoom",
+      "description": "Multiplayer couple game room documents keyed by uppercase room code."
+    },
+    "/rooms/{roomId}/secrets/{roundId}": {
+      "schema": "CelebritySecret",
+      "description": "Write-once per-round secret celebrity cards isolated from the guesser until revealed."
+    },
+    "/rooms/{roomId}/letters/{letterId}": {
+      "schema": "RoomLetter",
+      "description": "Real-time synchronized couple letters and pocket notes shared privately between host and guest."
+    }
+  }
+}

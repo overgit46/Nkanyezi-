@@ -1,8 +1,16 @@
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { Check, Heart, MailOpen, Send, Trash2 } from 'lucide-react';
+import { Check, Heart, MailOpen, Send, Sparkles, Trash2, Users } from 'lucide-react';
+import { User } from 'firebase/auth';
 import { DATE_VOUCHERS, LOVE_LETTER_PARAGRAPHS } from '../data/keepsakeData';
 import { SavedReplyNote, validateReplyNote } from '../utils/keepsakeLogic';
+import { GameRoomDoc } from '../firebase/roomService';
+import {
+  deleteRoomLetter,
+  RoomLetterDoc,
+  sendRoomLetter,
+  subscribeToRoomLetters,
+} from '../firebase/lettersService';
 
 interface LoveLetterSectionProps {
   letterUnsealed: boolean;
@@ -12,9 +20,13 @@ interface LoveLetterSectionProps {
   savedNotes: SavedReplyNote[];
   onAddNote: (message: string, mood: string) => void;
   onDeleteNote: (noteId: string) => void;
+  // Live Room sync props
+  user: User | null;
+  room: GameRoomDoc | null;
+  onOpenLiveRoomModal: () => void;
 }
 
-const MOOD_CHOICES = ['Blushing', 'Feeling Loved', 'Missing You', 'Ready For Our Date'];
+const MOOD_CHOICES = ['Blushing', 'Feeling Loved', 'Missing You', 'Ready For Our Date', 'Forever Yours'];
 
 export function LoveLetterSection({
   letterUnsealed,
@@ -24,14 +36,47 @@ export function LoveLetterSection({
   savedNotes,
   onAddNote,
   onDeleteNote,
+  user,
+  room,
+  onOpenLiveRoomModal,
 }: LoveLetterSectionProps) {
+  const [noteTitle, setNoteTitle] = useState('');
   const [noteInput, setNoteInput] = useState('');
   const [selectedMood, setSelectedMood] = useState(MOOD_CHOICES[0]);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [syncBusy, setSyncBusy] = useState(false);
+  const [syncedLetters, setSyncedLetters] = useState<RoomLetterDoc[]>([]);
+  const [lettersError, setLettersError] = useState<string | null>(null);
 
   const claimedVoucher = DATE_VOUCHERS.find((v) => v.id === claimedVoucherId) ?? null;
 
-  const handleSubmitNote = (e: FormEvent) => {
+  const isRoomActive = Boolean(room && user);
+  const isHost = Boolean(room && user && room.hostUid === user.uid);
+  const myRole: 'host' | 'guest' = isHost ? 'host' : 'guest';
+  const myName = isHost
+    ? room?.hostName || user?.displayName?.split(' ')[0] || 'You'
+    : room?.guestName || user?.displayName?.split(' ')[0] || 'Nkanyezi';
+
+  // Real-time synchronization of shared couple letters when connected in a live room
+  useEffect(() => {
+    if (!room || !user) {
+      setSyncedLetters([]);
+      return;
+    }
+    const unsub = subscribeToRoomLetters(
+      room.roomCode,
+      (letters) => {
+        setSyncedLetters(letters);
+        setLettersError(null);
+      },
+      (err) => {
+        setLettersError(err);
+      }
+    );
+    return () => unsub();
+  }, [room?.roomCode, user]);
+
+  const handleSubmitNote = async (e: FormEvent) => {
     e.preventDefault();
     const result = validateReplyNote(noteInput);
     if (!result.valid || !result.cleanedMessage) {
@@ -39,8 +84,43 @@ export function LoveLetterSection({
       return;
     }
     setValidationError(null);
+
+    // If connected to a live 2-phone room, write to the shared Firebase subcollection
+    if (room && user) {
+      setSyncBusy(true);
+      try {
+        await sendRoomLetter(room.roomCode, {
+          title: noteTitle,
+          content: result.cleanedMessage,
+          mood: selectedMood,
+          authorName: myName,
+          authorRole: myRole,
+        });
+        setNoteInput('');
+        setNoteTitle('');
+      } catch (err) {
+        setValidationError(
+          err instanceof Error ? err.message : 'Could not sync letter. Please check connection.'
+        );
+      } finally {
+        setSyncBusy(false);
+      }
+      return;
+    }
+
+    // Local keepsake note fallback
     onAddNote(result.cleanedMessage, selectedMood);
     setNoteInput('');
+    setNoteTitle('');
+  };
+
+  const handleDeleteSyncedLetter = async (letterId: string) => {
+    if (!room) return;
+    try {
+      await deleteRoomLetter(room.roomCode, letterId);
+    } catch (err) {
+      setLettersError(err instanceof Error ? err.message : 'Could not delete letter.');
+    }
   };
 
   return (
@@ -138,7 +218,7 @@ export function LoveLetterSection({
           </div>
         </div>
 
-        {/* Part 2: Interactive Date Night Voucher + Her Pocket Note */}
+        {/* Part 2: Interactive Date Night Voucher + Real-time Synced Pocket Letters */}
         <div
           id="date-vouchers"
           className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start pt-4"
@@ -211,25 +291,57 @@ export function LoveLetterSection({
             )}
           </div>
 
-          {/* Right: Leave a Little Keepsake Reply */}
+          {/* Right: Live-Synced Couple Letters & Pocket Notes */}
           <div className="lg:col-span-6 bg-white rounded-3xl p-6 sm:p-8 border border-[#ECDCE2]">
-            <p className="text-xs sm:text-sm font-medium text-[#8C5E6E] mb-2">
-              <span>Keepsake Box</span>
-              <span className="mx-2" aria-hidden="true">·</span>
-              <span>Saved on Your Phone</span>
-            </p>
+            <div className="flex items-center justify-between gap-3 mb-2">
+              <p className="text-xs sm:text-sm font-medium text-[#8C5E6E]">
+                <span>Couple’s Mailbox</span>
+                <span className="mx-2" aria-hidden="true">·</span>
+                <span>{isRoomActive && room ? `Live Synced (${room.roomCode})` : 'Private On This Phone'}</span>
+              </p>
+              <button
+                type="button"
+                onClick={onOpenLiveRoomModal}
+                className="min-h-[34px] px-3 rounded-xl bg-[#FAF0F4] hover:bg-[#F5DFE8] text-[#7D1941] text-xs font-semibold inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 transition-colors"
+              >
+                <Users className="w-3.5 h-3.5" aria-hidden="true" />
+                <span>{isRoomActive && room ? `Room: ${room.roomCode}` : 'Sync 2 Phones'}</span>
+              </button>
+            </div>
+
             <h3
               className="font-editorial text-2xl sm:text-3xl font-semibold text-[#1F1518] mb-2"
               style={{ textWrap: 'balance' }}
             >
-              Leave a little note or reaction.
+              {isRoomActive ? 'Our Live Shared Letters' : 'Leave a little note or reaction.'}
             </h3>
             <p className="text-sm text-[#574149] mb-5 leading-relaxed">
-              Jot down how you are feeling right now—your notes stay tucked inside this page
-              whenever you visit.
+              {isRoomActive && room
+                ? `Everything you write here instantly syncs to Room ${room.roomCode}. Both of us can read each other's letters in real time, and no one else can see them.`
+                : 'Jot down how you are feeling right now. Connect both phones with a room code anytime to sync your letters back and forth live!'}
             </p>
 
             <form onSubmit={handleSubmitNote} noValidate className="space-y-4">
+              {isRoomActive && (
+                <div>
+                  <label
+                    htmlFor="letter-title-input"
+                    className="block text-xs font-semibold text-[#5B444C] mb-1.5"
+                  >
+                    Letter Title / Subject (optional)
+                  </label>
+                  <input
+                    id="letter-title-input"
+                    type="text"
+                    value={noteTitle}
+                    onChange={(e) => setNoteTitle(e.target.value)}
+                    placeholder="e.g. For My Nkanyezi, Thinking of you..."
+                    maxLength={80}
+                    className="w-full rounded-xl border border-[#DFC9D1] bg-[#FDFBF9] px-4 py-2.5 text-sm text-[#1F1518] placeholder:text-[#9D828B] focus:border-[#D81B60] focus:outline-none"
+                  />
+                </div>
+              )}
+
               <div>
                 <span className="block text-xs font-semibold text-[#5B444C] mb-2">
                   Current mood
@@ -261,17 +373,23 @@ export function LoveLetterSection({
                   htmlFor="pocket-note-input"
                   className="block text-xs font-semibold text-[#5B444C] mb-2"
                 >
-                  Your note
+                  {isRoomActive && room
+                    ? `Write to ${isHost ? (room.guestName || 'Nkanyezi') : (room.hostName || 'your boyfriend')}`
+                    : 'Your note'}
                 </label>
                 <textarea
                   id="pocket-note-input"
-                  rows={3}
+                  rows={4}
                   value={noteInput}
                   onChange={(e) => {
                     setNoteInput(e.target.value);
                     if (validationError) setValidationError(null);
                   }}
-                  placeholder="Write whatever is on your heart..."
+                  placeholder={
+                    isRoomActive
+                      ? 'Write whatever is on your heart—it will appear on both of our screens...'
+                      : 'Write whatever is on your heart...'
+                  }
                   className="w-full rounded-xl border border-[#DFC9D1] bg-[#FDFBF9] px-4 py-3 text-sm text-[#1F1518] placeholder:text-[#9D828B] focus:border-[#D81B60] focus:outline-none"
                 />
                 {validationError && (
@@ -281,22 +399,120 @@ export function LoveLetterSection({
                 )}
               </div>
 
-              <button
-                type="submit"
-                className="min-h-[46px] px-5 py-2.5 rounded-xl bg-[#D81B60] hover:bg-[#BE1250] text-white text-sm font-semibold inline-flex items-center gap-2 active:scale-[0.98] transition-all whitespace-nowrap shrink-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D81B60]"
-              >
-                <Send className="w-4 h-4" aria-hidden="true" />
-                <span>Save Pocket Note</span>
-              </button>
+              <div className="flex items-center justify-between gap-3 pt-1">
+                <button
+                  type="submit"
+                  disabled={syncBusy}
+                  className="min-h-[46px] px-6 py-2.5 rounded-xl bg-[#D81B60] hover:bg-[#BE1250] disabled:opacity-60 text-white text-sm font-semibold inline-flex items-center gap-2 active:scale-[0.98] transition-all whitespace-nowrap shrink-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D81B60]"
+                >
+                  <Send className="w-4 h-4" aria-hidden="true" />
+                  <span>{syncBusy ? 'Sending...' : isRoomActive ? 'Send Letter Live' : 'Save Pocket Note'}</span>
+                </button>
+
+                {isRoomActive && (
+                  <span className="text-xs text-[#8C6573] flex items-center gap-1 font-medium">
+                    <Sparkles className="w-3.5 h-3.5 text-[#D81B60]" aria-hidden="true" />
+                    <span>Syncs as {myName}</span>
+                  </span>
+                )}
+              </div>
             </form>
 
-            {/* Saved Notes List */}
+            {/* Saved & Live Letters Feed */}
             <div className="mt-7 pt-6 border-t border-[#F2E5EA]">
-              <p className="text-xs font-semibold text-[#7A5965] mb-3">
-                Saved Notes ({savedNotes.length})
-              </p>
+              <div className="flex items-center justify-between gap-2 mb-3">
+                <p className="text-xs font-semibold text-[#7A5965]">
+                  {isRoomActive
+                    ? `Our Shared Letters (${syncedLetters.length})`
+                    : `Saved Notes (${savedNotes.length})`}
+                </p>
+                {isRoomActive && (
+                  <span className="text-[11px] font-medium text-[#D81B60] bg-[#FAF0F4] px-2.5 py-0.5 rounded-md">
+                    2-Phone Realtime Sync
+                  </span>
+                )}
+              </div>
 
-              {savedNotes.length === 0 ? (
+              {lettersError && (
+                <p role="alert" className="text-xs text-[#BE123C] mb-3">
+                  {lettersError}
+                </p>
+              )}
+
+              {isRoomActive ? (
+                syncedLetters.length === 0 ? (
+                  <div className="p-6 rounded-2xl bg-[#FAF4F6] text-center border border-[#F2E5EA]">
+                    <p className="font-editorial text-lg text-[#1F1518] mb-1">
+                      Our shared letterbox is waiting.
+                    </p>
+                    <p className="text-xs text-[#8C6573] max-w-sm mx-auto leading-relaxed">
+                      Write the very first letter above! Anything you or Nkanyezi write here will instantly pop up on both screens.
+                    </p>
+                  </div>
+                ) : (
+                  <ul className="space-y-3.5">
+                    {syncedLetters.map((letter) => {
+                      const isMine = letter.authorUid === user?.uid;
+                      const dateLabel = letter.createdAt
+                        ? new Date(letter.createdAt.seconds * 1000).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            hour: 'numeric',
+                            minute: '2-digit',
+                          })
+                        : 'Just now';
+
+                      return (
+                        <li
+                          key={letter.id}
+                          className={`p-4 rounded-2xl border transition-all ${
+                            isMine
+                              ? 'bg-[#FFFDFB] border-[#E8D4DC]'
+                              : 'bg-[#FAF2F5] border-[#E5BCCD]'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-3 mb-2">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className={`text-xs font-bold ${isMine ? 'text-[#D81B60]' : 'text-[#7D1941]'}`}>
+                                  {letter.authorName} {isMine ? '(You)' : ''}
+                                </span>
+                                <span className="text-[11px] text-[#8C6573]">·</span>
+                                <span className="text-[11px] font-medium text-[#8C6573]">
+                                  {letter.mood}
+                                </span>
+                              </div>
+                              {letter.title && (
+                                <h4 className="font-editorial text-base font-semibold text-[#1F1518] mt-0.5">
+                                  {letter.title}
+                                </h4>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-[11px] text-[#A68894] tabular-nums whitespace-nowrap">
+                                {dateLabel}
+                              </span>
+                              {isMine && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteSyncedLetter(letter.id)}
+                                  aria-label={`Delete your letter '${letter.content.slice(0, 20)}'`}
+                                  className="min-h-[32px] min-w-[32px] rounded-lg text-[#A68894] hover:text-[#BE123C] hover:bg-white flex items-center justify-center transition-colors shrink-0"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                          <p className="text-sm text-[#2D1D23] leading-relaxed whitespace-pre-wrap break-words">
+                            {letter.content}
+                          </p>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )
+              ) : savedNotes.length === 0 ? (
                 <p className="text-sm text-[#8C6573] italic">
                   No pocket notes saved yet—write the very first one above.
                 </p>

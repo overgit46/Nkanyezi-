@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { ArrowRight, Heart, Maximize2, Shuffle } from 'lucide-react';
+import { ArrowRight, Gamepad2, Heart, Maximize2, Shuffle } from 'lucide-react';
 import { MEMORY_PHOTOS, MemoryPhoto } from '../data/keepsakeData';
 import { ResilientPhoto } from './ResilientPhoto';
 
@@ -9,6 +9,7 @@ interface HeroSectionProps {
   heartedCount: number;
   onSendKiss: () => void;
   onOpenLetter: () => void;
+  onOpenGames: () => void;
   onSelectPhoto: (photo: MemoryPhoto) => void;
 }
 
@@ -22,6 +23,7 @@ export function HeroSection({
   heartedCount,
   onSendKiss,
   onOpenLetter,
+  onOpenGames,
   onSelectPhoto,
 }: HeroSectionProps) {
   const [deckIndex, setDeckIndex] = useState(0);
@@ -73,7 +75,7 @@ export function HeroSection({
             </p>
 
             {/* Interactive Primary & Playful Secondary Actions */}
-            <div className="flex flex-wrap items-center gap-3 sm:gap-4 mb-6">
+            <div className="flex flex-wrap items-center gap-3 sm:gap-3.5 mb-6">
               <button
                 type="button"
                 onClick={onOpenLetter}
@@ -81,6 +83,15 @@ export function HeroSection({
               >
                 <span>Unseal Your Letter</span>
                 <ArrowRight className="w-4 h-4" aria-hidden="true" />
+              </button>
+
+              <button
+                type="button"
+                onClick={onOpenGames}
+                className="min-h-[48px] px-5 py-3 rounded-xl bg-[#1F1518] hover:bg-[#332227] text-white text-sm font-semibold inline-flex items-center gap-2 active:scale-[0.98] transition-all duration-150 whitespace-nowrap shrink-0 shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D81B60]"
+              >
+                <Gamepad2 className="w-4 h-4 text-[#F9A8C6]" aria-hidden="true" />
+                <span>Play Games Together</span>
               </button>
 
               <div className="relative">
@@ -116,7 +127,7 @@ export function HeroSection({
             </div>
 
             {/* Mobile quick jump strip for thumb-friendly section access */}
-            <div className="flex md:hidden items-center gap-4 text-xs font-medium text-[#7B5B66] pt-2 border-t border-[#F0E4E8]">
+            <div className="flex md:hidden flex-wrap items-center gap-x-3.5 gap-y-1 text-xs font-medium text-[#7B5B66] pt-2 border-t border-[#F0E4E8]">
               <a href="#reasons" className="min-h-[44px] inline-flex items-center whitespace-nowrap">
                 Why It’s You
               </a>
@@ -125,9 +136,13 @@ export function HeroSection({
                 Camera Roll
               </a>
               <span aria-hidden="true">·</span>
-              <a href="#open-when" className="min-h-[44px] inline-flex items-center whitespace-nowrap">
-                Open When
-              </a>
+              <button
+                type="button"
+                onClick={onOpenGames}
+                className="min-h-[44px] inline-flex items-center font-semibold text-[#D81B60] whitespace-nowrap"
+              >
+                Game Lounge
+              </button>
             </div>
           </div>
 

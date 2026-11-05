@@ -86,3 +86,10 @@ test('validateReplyNote rejects empty input and trims valid notes', () => {
   const tooLongResult = validateReplyNote('a'.repeat(285));
   assert.equal(tooLongResult.valid, false);
 });
+
+test('sanitizeLetterText trims whitespace and enforces maximum length', async () => {
+  const { sanitizeLetterText } = await import('../firebase/lettersService');
+  assert.equal(sanitizeLetterText('   Hello Nkanyezi   ', 80), 'Hello Nkanyezi');
+  assert.equal(sanitizeLetterText('A'.repeat(100), 20), 'A'.repeat(20));
+});
+
