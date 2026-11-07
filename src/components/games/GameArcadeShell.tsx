@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { auth } from '../../firebase/client';
 import {
@@ -11,6 +11,8 @@ import { gameAudio } from '../../games/soundFx';
 import { TicTacToeArena } from './TicTacToeArena';
 import { CardLoungeTable } from './CardLoungeTable';
 import { CelebrityGuessArena } from './CelebrityGuessArena';
+import { SnakesArena } from './SnakesArena';
+import { LudoArena } from './LudoArena';
 import { LiveRoomModal } from './LiveRoomModal';
 import { PlayingCardView } from './PlayingCardView';
 
@@ -33,6 +35,16 @@ const GAME_CATALOG: readonly {
   title: string;
   subtitle: string;
 }[] = [
+  {
+    id: 'snakes',
+    title: 'Snakes & Ladders',
+    subtitle: '100 Squares · Couple Milestones & Slides',
+  },
+  {
+    id: 'ludo',
+    title: 'Couple’s Ludo',
+    subtitle: 'Safe Stars · Fast 2-Player Race to Home',
+  },
   {
     id: 'cards',
     title: 'Card Lounge · 4P',
@@ -73,6 +85,13 @@ export function GameArcadeShell({
     you: 0,
     partner: 0,
   });
+
+  const handleScoreChange = useCallback((you: number, partner: number) => {
+    setScores((prev) => {
+      if (prev.you === you && prev.partner === partner) return prev;
+      return { you, partner };
+    });
+  }, []);
   const [matchSummary, setMatchSummary] = useState<{
     headline: string;
     subline: string;
@@ -213,7 +232,7 @@ export function GameArcadeShell({
     <div className="min-h-screen w-full bg-[#170F13] text-[#FFF7FA] flex flex-col justify-between select-none overflow-x-hidden">
       {shellState === 'title' ? (
         /* ================= PART I: GAME SHELL TITLE STAGE ================= */
-        <main className="flex-1 flex flex-col justify-between max-w-6xl w-full mx-auto px-4 sm:px-8 py-6 sm:py-10">
+        <main className="flex-1 flex flex-col justify-start lg:justify-between max-w-6xl w-full mx-auto px-4 sm:px-8 py-6 sm:py-10 gap-6">
           {/* Top Escape back to Keepsake + 2-Phone Room Trigger */}
           <div className="flex items-center justify-between gap-4">
             <button
@@ -276,17 +295,17 @@ export function GameArcadeShell({
                   y="66"
                   fill="#E0B6C6"
                   fontFamily="Plus Jakarta Sans, sans-serif"
-                  fontSize="12.5"
+                  fontSize="10.5"
                   fontWeight="600"
-                  letterSpacing="2.2"
+                  letterSpacing="1.6"
                 >
-                  CARDS · CELEBRITY · TIC-TAC-TOE
+                  SNAKES · LUDO · CARDS · CELEBRITY · TIC-TAC-TOE
                 </text>
               </svg>
 
               {/* Interactive Game Picker Cards */}
               <div
-                className="w-full grid grid-cols-1 sm:grid-cols-3 gap-2.5 mb-6"
+                className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 mb-6"
                 role="radiogroup"
                 aria-label="Choose a game to play"
               >
@@ -299,16 +318,16 @@ export function GameArcadeShell({
                       role="radio"
                       aria-checked={active}
                       onClick={() => setSelectedGame(item.id)}
-                      className={`text-left p-3.5 rounded-2xl border transition-all ${
+                      className={`text-left p-3 rounded-2xl border transition-all ${
                         active
                           ? 'bg-[#321C27] border-[#D81B60] ring-2 ring-[#D81B60]/50'
                           : 'bg-[#21141B] border-[#3B2530] hover:border-[#5C3A4B]'
                       }`}
                     >
-                      <p className="font-editorial text-lg font-semibold text-white">
+                      <p className="font-editorial text-base sm:text-lg font-semibold text-white">
                         {item.title}
                       </p>
-                      <p className="text-xs text-[#C9A3B2] mt-0.5 leading-snug">
+                      <p className="text-[11px] text-[#C9A3B2] mt-0.5 leading-snug">
                         {item.subtitle}
                       </p>
                     </button>
@@ -342,27 +361,70 @@ export function GameArcadeShell({
 
             {/* Right Interactive Centerpiece Showcase */}
             <div className="lg:col-span-5 flex items-center justify-center">
-              <div className="relative w-full max-w-[360px] rounded-3xl bg-[#143829] border-4 border-[#3E242D] p-6 shadow-2xl flex flex-col items-center">
-                <div className="flex items-center justify-center -space-x-3 mb-4">
-                  <div className="-rotate-12 transition-transform hover:-translate-y-2">
-                    <PlayingCardView code="8H" size="lg" playable />
+              <div className="relative w-full max-w-[360px] rounded-3xl bg-[#1D1219] border-4 border-[#3E242D] p-6 shadow-2xl flex flex-col items-center">
+                {selectedGame === 'snakes' && (
+                  <div className="flex flex-col items-center mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#10B981] to-[#047857] flex items-center justify-center text-white font-black text-xl shadow-lg border border-[#34D399]/40">
+                        🪜
+                      </div>
+                      <div className="w-14 h-14 rounded-2xl bg-[#2C1824] border-2 border-[#E5B2C5] flex items-center justify-center text-[#FDE68A] font-mono text-3xl font-black shadow-xl">
+                        6
+                      </div>
+                      <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#EF4444] to-[#991B1B] flex items-center justify-center text-white font-black text-xl shadow-lg border border-[#F87171]/40">
+                        🐍
+                      </div>
+                    </div>
                   </div>
-                  <div className="z-10 -translate-y-2 transition-transform hover:-translate-y-4">
-                    <PlayingCardView code="AS" size="lg" />
+                )}
+
+                {selectedGame === 'ludo' && (
+                  <div className="flex flex-col items-center mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-[#D81B60] to-[#FF80AB] ring-4 ring-[#D81B60]/40 flex items-center justify-center text-white font-bold text-sm shadow-xl">
+                        N1
+                      </div>
+                      <div className="w-10 h-10 rounded-xl bg-[#F59E0B] flex items-center justify-center text-white text-lg font-black shadow-md">
+                        ★
+                      </div>
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-[#0284C7] to-[#38BDF8] ring-4 ring-[#0284C7]/40 flex items-center justify-center text-white font-bold text-sm shadow-xl">
+                        B1
+                      </div>
+                    </div>
                   </div>
-                  <div className="rotate-12 transition-transform hover:-translate-y-2">
-                    <PlayingCardView faceDown size="lg" />
+                )}
+
+                {(selectedGame === 'cards' || selectedGame === 'celebrity' || selectedGame === 'tictactoe') && (
+                  <div className="flex items-center justify-center -space-x-3 mb-4">
+                    <div className="-rotate-12 transition-transform hover:-translate-y-2">
+                      <PlayingCardView code="8H" size="lg" playable />
+                    </div>
+                    <div className="z-10 -translate-y-2 transition-transform hover:-translate-y-4">
+                      <PlayingCardView code="AS" size="lg" />
+                    </div>
+                    <div className="rotate-12 transition-transform hover:-translate-y-2">
+                      <PlayingCardView faceDown size="lg" />
+                    </div>
                   </div>
-                </div>
+                )}
+
                 <p className="font-editorial text-xl font-semibold text-[#FFF7FA] text-center">
-                  {selectedGame === 'cards'
-                    ? '4-Player Crazy Eights, Switch & Hearts'
-                    : selectedGame === 'celebrity'
-                      ? '48 Celebrity Cards · Secret Role Swap'
-                      : 'Bolt 3-Piece & Classic Tic-Tac-Toe'}
+                  {selectedGame === 'snakes'
+                    ? '100-Square Couple Snakes & Ladders'
+                    : selectedGame === 'ludo'
+                      ? 'Safe Stars · Fast 2-Player Ludo'
+                      : selectedGame === 'cards'
+                        ? '4-Player Crazy Eights, Switch & Hearts'
+                        : selectedGame === 'celebrity'
+                          ? '48 Celebrity Cards · Secret Role Swap'
+                          : 'Bolt 3-Piece & Classic Tic-Tac-Toe'}
                 </p>
-                <p className="text-xs text-[#CBE5D8] text-center mt-1">
-                  Play instantly vs smart bots, pass-and-play on one phone, or sync live across both phones.
+                <p className="text-xs text-[#DEC0CC] text-center mt-1">
+                  {selectedGame === 'snakes'
+                    ? 'Climb romantic ladders, slide down playful snakes, roll again on 6, exact bounce on 100.'
+                    : selectedGame === 'ludo'
+                      ? '2 tokens each for snappy ~5-min matches, 8 safe stars, bonus turns on 6 or capture.'
+                      : 'Play instantly vs smart bots, pass-and-play on one phone, or sync live across both phones.'}
                 </p>
               </div>
             </div>
@@ -375,12 +437,12 @@ export function GameArcadeShell({
         </main>
       ) : (
         /* ================= PART II: UNIFIED PERIMETER HUD + ACTIVE ARENA ================= */
-        <div className="flex-1 flex flex-col h-screen max-h-screen overflow-hidden">
+        <div className="flex-1 flex flex-col h-screen overflow-hidden bg-[#170F13]">
           {/* Single Unified Perimeter HUD Bar (1 row on sm+, clean 2-row dock on 390px mobile so zero tabs clip) */}
           <div
             role="region"
             aria-label="Game controls and score HUD"
-            className="shrink-0 bg-[#21141B] border-b border-[#3D2632] px-3 sm:px-5 py-2 flex flex-col gap-2"
+            className="shrink-0 z-30 bg-[#21141B]/95 backdrop-blur-md border-b border-[#3D2632] px-3 sm:px-5 py-2 flex flex-col gap-2 shadow-md"
           >
             <div className="flex items-center justify-between gap-2">
               {/* Left: Lobby + Desktop Game Tabs */}
@@ -393,7 +455,7 @@ export function GameArcadeShell({
                 >
                   ← Lobby
                 </button>
-                <div className="hidden sm:flex items-center gap-1.5">
+                <div className="hidden md:flex items-center gap-1.5 flex-wrap">
                   {GAME_CATALOG.map((g) => (
                     <button
                       key={g.id}
@@ -405,11 +467,15 @@ export function GameArcadeShell({
                           : 'bg-[#2A1922] text-[#CDB0BC] hover:text-white'
                       }`}
                     >
-                      {g.id === 'cards'
-                        ? 'Cards (4P)'
-                        : g.id === 'celebrity'
-                          ? 'Celebrity'
-                          : 'Tic-Tac-Toe'}
+                      {g.id === 'snakes'
+                        ? 'Snakes & Ladders'
+                        : g.id === 'ludo'
+                          ? 'Ludo'
+                          : g.id === 'cards'
+                            ? 'Cards (4P)'
+                            : g.id === 'celebrity'
+                              ? 'Celebrity'
+                              : 'Tic-Tac-Toe'}
                     </button>
                   ))}
                 </div>
@@ -509,38 +575,68 @@ export function GameArcadeShell({
               </div>
             </div>
 
-            {/* Mobile-only full-width 3-game switcher row so zero tabs clip on 390px phones */}
-            <div className="grid grid-cols-3 gap-1.5 sm:hidden">
+            {/* Mobile-only scrolling switcher row so zero tabs clip on narrow phones */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:hidden">
               {GAME_CATALOG.map((g) => (
                 <button
                   key={g.id}
                   type="button"
                   onClick={() => handleSelectGameTab(g.id)}
-                  className={`min-h-[38px] px-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors ${
+                  className={`min-h-[38px] px-3 rounded-xl text-xs font-semibold whitespace-nowrap shrink-0 transition-colors ${
                     selectedGame === g.id
                       ? 'bg-[#D81B60] text-white'
                       : 'bg-[#2A1922] text-[#CDB0BC] hover:text-white'
                   }`}
                 >
-                  {g.id === 'cards'
-                    ? 'Cards (4P)'
-                    : g.id === 'celebrity'
-                      ? 'Celebrity'
-                      : 'Tic-Tac-Toe'}
+                  {g.id === 'snakes'
+                    ? 'Snakes'
+                    : g.id === 'ludo'
+                      ? 'Ludo'
+                      : g.id === 'cards'
+                        ? 'Cards'
+                        : g.id === 'celebrity'
+                          ? 'Celebrity'
+                          : 'Tic-Tac-Toe'}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Unobstructed Active Playfield (>= 85% viewport) */}
-          <main className="flex-1 overflow-y-auto flex flex-col justify-center">
+          {/* Unobstructed Active Playfield with full vertical scrolling */}
+          <main className="flex-1 overflow-y-auto overscroll-contain flex flex-col items-center justify-start py-4 px-2 sm:px-6 pb-28">
+            {selectedGame === 'snakes' && (
+              <SnakesArena
+                room={room}
+                userUid={user?.uid ?? null}
+                restartTrigger={restartNonce}
+                onScoreUpdate={(s: { you: number; partner: number }) => handleScoreChange(s.you, s.partner)}
+                onGameOver={(headline: string, subline: string) => {
+                  setMatchSummary({ headline, subline });
+                  setShellState('gameover');
+                }}
+              />
+            )}
+
+            {selectedGame === 'ludo' && (
+              <LudoArena
+                room={room}
+                userUid={user?.uid ?? null}
+                restartTrigger={restartNonce}
+                onScoreUpdate={(s: { you: number; partner: number }) => handleScoreChange(s.you, s.partner)}
+                onGameOver={(headline: string, subline: string) => {
+                  setMatchSummary({ headline, subline });
+                  setShellState('gameover');
+                }}
+              />
+            )}
+
             {selectedGame === 'tictactoe' && (
               <TicTacToeArena
                 room={room}
                 currentUid={user?.uid ?? null}
                 paused={shellState !== 'playing'}
                 restartNonce={restartNonce}
-                onScoreChange={(you, partner) => setScores({ you, partner })}
+                onScoreChange={handleScoreChange}
                 onMatchEnd={(headline, subline) => {
                   setMatchSummary({ headline, subline });
                   setShellState('gameover');
@@ -554,7 +650,7 @@ export function GameArcadeShell({
                 currentUid={user?.uid ?? null}
                 paused={shellState !== 'playing'}
                 restartNonce={restartNonce}
-                onScoreChange={(you, partner) => setScores({ you, partner })}
+                onScoreChange={handleScoreChange}
                 onMatchEnd={(headline, subline) => {
                   setMatchSummary({ headline, subline });
                   setShellState('gameover');
@@ -568,7 +664,7 @@ export function GameArcadeShell({
                 currentUid={user?.uid ?? null}
                 paused={shellState !== 'playing'}
                 restartNonce={restartNonce}
-                onScoreChange={(you, partner) => setScores({ you, partner })}
+                onScoreChange={handleScoreChange}
                 onMatchEnd={(headline, subline) => {
                   setMatchSummary({ headline, subline });
                   setShellState('gameover');

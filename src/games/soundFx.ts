@@ -72,6 +72,34 @@ class SoundController {
     this.playTone(587.33, 0.12, 'sine', 0.08, 0);
     this.playTone(880, 0.18, 'sine', 0.08, 0.09);
   }
+
+  playDiceRoll() {
+    this.playTone(420, 0.04, 'triangle', 0.08, 0);
+    this.playTone(540, 0.04, 'triangle', 0.08, 0.05);
+    this.playTone(660, 0.06, 'sine', 0.09, 0.1);
+  }
+
+  playStep() {
+    this.playTone(480, 0.05, 'triangle', 0.06);
+  }
+
+  playLadderClimb() {
+    this.playTone(440, 0.08, 'triangle', 0.08, 0);
+    this.playTone(554.37, 0.08, 'triangle', 0.08, 0.08);
+    this.playTone(659.25, 0.1, 'triangle', 0.09, 0.16);
+    this.playTone(880, 0.16, 'sine', 0.1, 0.24);
+  }
+
+  playSnakeSlide() {
+    this.playTone(660, 0.09, 'sawtooth', 0.07, 0);
+    this.playTone(520, 0.09, 'sawtooth', 0.07, 0.08);
+    this.playTone(390, 0.14, 'sine', 0.08, 0.16);
+  }
+
+  playCapture() {
+    this.playTone(700, 0.08, 'triangle', 0.09, 0);
+    this.playTone(350, 0.12, 'sawtooth', 0.08, 0.06);
+  }
 }
 
 export const gameAudio = new SoundController();

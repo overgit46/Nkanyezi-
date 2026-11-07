@@ -140,15 +140,18 @@ export function CelebrityGuessArena({
     onlineViewerIsClueGiver,
   ]);
 
+  const onScoreChangeRef = useRef(onScoreChange);
+  onScoreChangeRef.current = onScoreChange;
+
   // Sync scores to top HUD
   useEffect(() => {
     if (isOnline && room) {
-      onScoreChange(
+      onScoreChangeRef.current(
         isHost ? room.hostScore : room.guestScore,
         isHost ? room.guestScore : room.hostScore
       );
     } else {
-      onScoreChange(localScores.you, localScores.nkanyezi);
+      onScoreChangeRef.current(localScores.you, localScores.nkanyezi);
     }
   }, [isOnline, isHost, room?.hostScore, room?.guestScore, localScores.you, localScores.nkanyezi]);
 
@@ -391,7 +394,7 @@ export function CelebrityGuessArena({
   };
 
   return (
-    <div className="w-full h-full flex flex-col justify-between gap-3 px-3 sm:px-6 py-2 max-w-3xl mx-auto">
+    <div className="w-full max-w-3xl mx-auto flex flex-col justify-start gap-4 px-3 sm:px-6 py-2 select-none">
       {/* Category Deck Selector */}
       <div className="flex flex-wrap items-center justify-between gap-2 bg-[#23171D] border border-[#3E2833] rounded-2xl p-2">
         <div

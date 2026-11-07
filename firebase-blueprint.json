@@ -41,7 +41,7 @@
         "activeGame": {
           "type": "string",
           "description": "Currently selected game in the room.",
-          "enum": ["tictactoe", "cards", "celebrity"],
+          "enum": ["tictactoe", "cards", "celebrity", "snakes", "ludo"],
           "maxLength": 20
         },
         "roomStatus": {
@@ -78,6 +78,14 @@
           "type": "object",
           "description": "Native Map holding public Guess the Celebrity round state (clueGiverUid, roundId, category, questionCount, lastQA, revealedName, outcome)."
         },
+        "snakes": {
+          "type": "object",
+          "description": "Native Map holding Snakes & Ladders state (p1Pos, p2Pos, lastRoll, consecutiveSixes, lastEvent, winnerSeat)."
+        },
+        "ludo": {
+          "type": "object",
+          "description": "Native Map holding 2-Player Ludo state (tokens array of 4 positions, phase, lastDice, consecutiveSixes, lastAction, winnerSeat)."
+        },
         "createdAt": {
           "type": "string",
           "format": "date-time",
@@ -104,6 +112,8 @@
         "ttt",
         "cards",
         "celeb",
+        "snakes",
+        "ludo",
         "createdAt",
         "updatedAt"
       ]

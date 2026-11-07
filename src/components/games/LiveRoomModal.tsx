@@ -1,6 +1,7 @@
 import { FormEvent, useState } from 'react';
 import { signInWithPopup, User } from 'firebase/auth';
-import { auth, googleProvider } from '../../firebase/client';
+import { AlertTriangle, Check, Copy, ExternalLink } from 'lucide-react';
+import { auth, firebaseProjectId, googleProvider } from '../../firebase/client';
 import {
   ActiveGameKind,
   createMultiplayerRoom,
@@ -34,24 +35,44 @@ export function LiveRoomModal({
   const [joinCodeInput, setJoinCodeInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [unauthorizedDomain, setUnauthorizedDomain] = useState<string | null>(null);
+  const [copiedDomain, setCopiedDomain] = useState(false);
   const [copied, setCopied] = useState(false);
 
   if (!open) return null;
 
   const handleGoogleSignIn = async () => {
     setErrorMessage(null);
+    setUnauthorizedDomain(null);
     setBusy(true);
     try {
       const cred = await signInWithPopup(auth, googleProvider);
       if (!displayName && cred.user.displayName) {
         setDisplayName(cred.user.displayName.split(' ')[0]);
       }
-    } catch (err) {
-      setErrorMessage(
-        err instanceof Error
-          ? err.message
-          : 'Google Sign-In could not complete. Check popup permissions.'
-      );
+    } catch (err: unknown) {
+      const isDomainError =
+        (err instanceof Error &&
+          (err.message.toLowerCase().includes('unauthorized-domain') ||
+            err.message.includes('auth/unauthorized-domain'))) ||
+        (typeof err === 'object' &&
+          err !== null &&
+          'code' in err &&
+          (err as { code: string }).code === 'auth/unauthorized-domain');
+
+      if (isDomainError) {
+        const host = typeof window !== 'undefined' ? window.location.hostname : '';
+        setUnauthorizedDomain(host);
+        setErrorMessage(
+          `Domain "${host}" is not authorized in Firebase Authentication.`
+        );
+      } else {
+        setErrorMessage(
+          err instanceof Error
+            ? err.message
+            : 'Google Sign-In could not complete. Check popup permissions.'
+        );
+      }
     } finally {
       setBusy(false);
     }
@@ -275,11 +296,82 @@ export function LiveRoomModal({
           </div>
         )}
 
-        {errorMessage && (
+        {unauthorizedDomain ? (
+          <div className="mt-4 rounded-2xl bg-[#2D161F] border border-[#6B243D] p-4 text-[#FDE8EF] space-y-3">
+            <div className="flex items-center gap-2 text-[#FDA4AF] font-semibold text-sm">
+              <AlertTriangle className="w-4 h-4 shrink-0 text-[#FB7185]" aria-hidden="true" />
+              <span>Authorize Domain in Firebase</span>
+            </div>
+            <p className="text-xs text-[#E5BFCE] leading-relaxed">
+              Google Sign-In is blocked because this website domain is not yet on your Firebase project’s{' '}
+              <span className="font-semibold text-white">Authorized domains</span> list.
+            </p>
+
+            <div className="bg-[#1A0C13] p-2.5 rounded-xl border border-[#4E2131] flex items-center justify-between gap-2">
+              <span className="font-mono text-xs text-[#FDE68A] truncate select-all">
+                {unauthorizedDomain}
+              </span>
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(unauthorizedDomain);
+                    setCopiedDomain(true);
+                    setTimeout(() => setCopiedDomain(false), 2000);
+                  } catch {
+                    // ignore
+                  }
+                }}
+                className="px-2.5 py-1.5 rounded-lg bg-[#3C1C29] hover:bg-[#522538] text-white text-[11px] font-semibold inline-flex items-center gap-1 shrink-0 transition-colors"
+              >
+                {copiedDomain ? (
+                  <>
+                    <Check className="w-3 h-3 text-[#34D399]" />
+                    <span>Copied!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3 h-3 text-[#E8B8C9]" />
+                    <span>Copy Domain</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            <div className="space-y-1.5 text-[11px] text-[#DEC0CC]">
+              <p className="font-semibold text-white">1-Minute Quick Fix:</p>
+              <ol className="list-decimal pl-4 space-y-1">
+                <li>
+                  Open{' '}
+                  <a
+                    href={`https://console.firebase.google.com/project/${firebaseProjectId}/authentication/settings`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[#F43F5E] hover:text-[#FB7185] underline font-semibold inline-flex items-center gap-0.5"
+                  >
+                    Firebase Console Settings
+                    <ExternalLink className="w-3 h-3 inline" />
+                  </a>
+                </li>
+                <li>Scroll down to <strong>Authorized domains</strong> and click <strong>Add domain</strong></li>
+                <li>Paste <code className="bg-[#1A0C13] px-1 py-0.5 rounded text-[#FDE68A]">{unauthorizedDomain}</code> and click <strong>Add</strong></li>
+              </ol>
+            </div>
+
+            <button
+              type="button"
+              disabled={busy}
+              onClick={handleGoogleSignIn}
+              className="w-full mt-2 min-h-[42px] rounded-xl bg-[#D81B60] hover:bg-[#BE1250] disabled:opacity-60 text-white font-semibold text-xs transition-colors"
+            >
+              {busy ? 'Connecting...' : 'I Added the Domain · Try Sign In Again'}
+            </button>
+          </div>
+        ) : errorMessage ? (
           <p role="alert" className="mt-3 text-xs text-[#FDA4AF] bg-[#3B1522] rounded-xl p-2.5">
             {errorMessage}
           </p>
-        )}
+        ) : null}
       </div>
     </div>
   );

@@ -1,10 +1,13 @@
 import { CardCode, CardTableState, CardVariant, Suit } from './cardGamesLogic';
 import { CelebrityOutcome } from './celebrityLogic';
 import { detectTttWinner, TttMark, TttMode, TttOutcome, TttState } from './ticTacToeLogic';
+import { SnakesState } from './snakesLogic';
+import { LudoState } from './ludoLogic';
 
 export const MAX_CARD_ACTION_LEN = 120;
 export const MAX_QA_LEN = 160;
 export const MAX_REVEALED_NAME_LEN = 80;
+export const MAX_EVENT_LEN = 120;
 
 export interface TttRoomMap {
   mode: TttMode;
@@ -33,6 +36,24 @@ export interface CelebRoomMap {
   lastQA: string;
   revealedName: string;
   outcome: CelebrityOutcome;
+}
+
+export interface SnakesRoomMap {
+  p1Pos: number;
+  p2Pos: number;
+  lastRoll: number;
+  consecutiveSixes: number;
+  lastEvent: string;
+  winnerSeat: number;
+}
+
+export interface LudoRoomMap {
+  tokens: [number, number, number, number];
+  phase: 'need_roll' | 'need_move' | 'game_over';
+  lastDice: number;
+  consecutiveSixes: number;
+  lastAction: string;
+  winnerSeat: number;
 }
 
 export function tttStateToMap(state: TttState): TttRoomMap {
@@ -138,5 +159,63 @@ export function cardStateFromMap(cards: CardsRoomMap, turnSeat: number): CardTab
     trickScores: cards.trickScores,
     lastAction: cards.lastAction,
     winnerSeat: cards.winnerSeat,
+  };
+}
+
+export function snakesStateToMap(state: SnakesState): SnakesRoomMap {
+  return {
+    p1Pos: Math.max(1, Math.min(100, state.p1Pos)),
+    p2Pos: Math.max(1, Math.min(100, state.p2Pos)),
+    lastRoll: Math.max(0, Math.min(6, state.lastRoll)),
+    consecutiveSixes: Math.max(0, Math.min(3, state.consecutiveSixes)),
+    lastEvent: state.lastEvent.slice(0, MAX_EVENT_LEN),
+    winnerSeat: state.winner !== null ? state.winner : -1,
+  };
+}
+
+export function snakesStateFromMap(map: SnakesRoomMap, turnSeat: number): SnakesState {
+  return {
+    p1Pos: typeof map.p1Pos === 'number' ? map.p1Pos : 1,
+    p2Pos: typeof map.p2Pos === 'number' ? map.p2Pos : 1,
+    turnSeat: (turnSeat === 1 ? 1 : 0) as 0 | 1,
+    lastRoll: typeof map.lastRoll === 'number' ? map.lastRoll : 0,
+    consecutiveSixes: typeof map.consecutiveSixes === 'number' ? map.consecutiveSixes : 0,
+    lastEvent: typeof map.lastEvent === 'string' ? map.lastEvent : 'Roll to start!',
+    winner: map.winnerSeat === 0 || map.winnerSeat === 1 ? map.winnerSeat : null,
+    history: map.lastEvent ? [map.lastEvent] : [],
+  };
+}
+
+export function ludoStateToMap(state: LudoState): LudoRoomMap {
+  return {
+    tokens: [
+      state.tokens[0],
+      state.tokens[1],
+      state.tokens[2],
+      state.tokens[3],
+    ],
+    phase: state.phase,
+    lastDice: Math.max(0, Math.min(6, state.lastDice)),
+    consecutiveSixes: Math.max(0, Math.min(3, state.consecutiveSixes)),
+    lastAction: state.lastAction.slice(0, MAX_EVENT_LEN),
+    winnerSeat: state.winner !== null ? state.winner : -1,
+  };
+}
+
+export function ludoStateFromMap(map: LudoRoomMap, turnSeat: number): LudoState {
+  const tokens: [number, number, number, number] =
+    Array.isArray(map.tokens) && map.tokens.length === 4
+      ? [map.tokens[0], map.tokens[1], map.tokens[2], map.tokens[3]]
+      : [-1, -1, -1, -1];
+
+  return {
+    tokens,
+    turnSeat: (turnSeat === 1 ? 1 : 0) as 0 | 1,
+    phase: map.phase in ['need_roll', 'need_move', 'game_over'] ? map.phase : 'need_roll',
+    lastDice: typeof map.lastDice === 'number' ? map.lastDice : 0,
+    consecutiveSixes: typeof map.consecutiveSixes === 'number' ? map.consecutiveSixes : 0,
+    lastAction: typeof map.lastAction === 'string' ? map.lastAction : 'Roll to start!',
+    winner: map.winnerSeat === 0 || map.winnerSeat === 1 ? map.winnerSeat : null,
+    history: map.lastAction ? [map.lastAction] : [],
   };
 }

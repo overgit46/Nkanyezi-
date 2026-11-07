@@ -94,6 +94,34 @@ service cloud.firestore {
         && cb.outcome in ['guessing', 'guessed', 'gave_up'];
     }
 
+    function isValidSnakesMap(s) {
+      let sk = s.keys();
+      let keys = ['p1Pos', 'p2Pos', 'lastRoll', 'consecutiveSixes', 'lastEvent', 'winnerSeat'];
+      return s is map
+        && sk.hasAll(keys)
+        && sk.hasOnly(keys)
+        && s.p1Pos is number && s.p1Pos >= 1 && s.p1Pos <= 100
+        && s.p2Pos is number && s.p2Pos >= 1 && s.p2Pos <= 100
+        && s.lastRoll is number && s.lastRoll >= 0 && s.lastRoll <= 6
+        && s.consecutiveSixes is number && s.consecutiveSixes >= 0 && s.consecutiveSixes <= 3
+        && s.lastEvent is string && s.lastEvent.size() <= 120
+        && s.winnerSeat in [-1, 0, 1];
+    }
+
+    function isValidLudoMap(l) {
+      let lk = l.keys();
+      let keys = ['tokens', 'phase', 'lastDice', 'consecutiveSixes', 'lastAction', 'winnerSeat'];
+      return l is map
+        && lk.hasAll(keys)
+        && lk.hasOnly(keys)
+        && l.tokens is list && l.tokens.size() == 4 && l.tokens[0] is number
+        && l.phase in ['need_roll', 'need_move', 'game_over']
+        && l.lastDice is number && l.lastDice >= 0 && l.lastDice <= 6
+        && l.consecutiveSixes is number && l.consecutiveSixes >= 0 && l.consecutiveSixes <= 3
+        && l.lastAction is string && l.lastAction.size() <= 120
+        && l.winnerSeat in [-1, 0, 1];
+    }
+
     // Validation Blueprint: GameRoom (Anti-Update-Gap)
     function isValidGameRoom(data) {
       let d = data;
@@ -101,7 +129,7 @@ service cloud.firestore {
       let keys = [
         'roomCode', 'hostUid', 'hostName', 'guestUid', 'guestName',
         'activeGame', 'roomStatus', 'turnSeat', 'hostScore', 'guestScore', 'roundNumber',
-        'ttt', 'cards', 'celeb', 'createdAt', 'updatedAt'
+        'ttt', 'cards', 'celeb', 'snakes', 'ludo', 'createdAt', 'updatedAt'
       ];
       return d is map
         && dk.hasAll(keys)
@@ -111,7 +139,7 @@ service cloud.firestore {
         && d.hostName is string && d.hostName.size() >= 1 && d.hostName.size() <= 40
         && isValidUidOrEmpty(d.guestUid)
         && d.guestName is string && d.guestName.size() <= 40
-        && d.activeGame in ['tictactoe', 'cards', 'celebrity']
+        && d.activeGame in ['tictactoe', 'cards', 'celebrity', 'snakes', 'ludo']
         && d.roomStatus in ['waiting', 'playing', 'round_over', 'closed']
         && d.turnSeat in [0, 1, 2, 3]
         && d.hostScore is number && d.hostScore >= 0 && d.hostScore <= 9999
@@ -120,6 +148,8 @@ service cloud.firestore {
         && isValidTttMap(d.ttt)
         && isValidCardsMap(d.cards)
         && isValidCelebMap(d.celeb)
+        && isValidSnakesMap(d.snakes)
+        && isValidLudoMap(d.ludo)
         && d.createdAt is timestamp
         && d.updatedAt is timestamp;
     }
@@ -209,7 +239,7 @@ service cloud.firestore {
             && d.guestName == e.guestName
             && diffKeys.hasOnly([
               'activeGame', 'roomStatus', 'turnSeat', 'hostScore', 'guestScore',
-              'roundNumber', 'ttt', 'cards', 'celeb', 'updatedAt'
+              'roundNumber', 'ttt', 'cards', 'celeb', 'snakes', 'ludo', 'updatedAt'
             ])
           )
           ||

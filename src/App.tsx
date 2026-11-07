@@ -43,7 +43,11 @@ function parseUrlLaunchConfig(): {
   const autoStart = params.get('autostart') === '1';
 
   const initialGame: ActiveGameKind =
-    gameParam === 'tictactoe' || gameParam === 'cards' || gameParam === 'celebrity'
+    gameParam === 'tictactoe' ||
+    gameParam === 'cards' ||
+    gameParam === 'celebrity' ||
+    gameParam === 'snakes' ||
+    gameParam === 'ludo'
       ? gameParam
       : 'cards';
 
@@ -270,7 +274,53 @@ export default function App() {
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+              <div className="rounded-3xl bg-[#271820] border border-[#422A36] p-6 flex flex-col justify-between">
+                <div>
+                  <p className="text-xs text-[#34D399] font-medium mb-2">
+                    100 Squares · Couple Milestones
+                  </p>
+                  <h3 className="font-editorial text-2xl font-semibold text-white mb-2">
+                    Snakes & Ladders
+                  </h3>
+                  <p className="text-sm text-[#D6B8C4] leading-relaxed mb-6">
+                    Zigzag across 100 tiles. Climb ladders for romantic perks, dodge playful snake
+                    slides, roll again on 6, and bounce back if you overshoot tile 100!
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleOpenGames('snakes')}
+                  className="min-h-[44px] px-4 py-2.5 rounded-xl bg-[#0F3929] hover:bg-[#184F3B] border border-[#23684F] text-[#E8F8F0] text-xs font-semibold inline-flex items-center justify-between"
+                >
+                  <span>Climb & Roll Dice</span>
+                  <Sparkles className="w-3.5 h-3.5 text-[#34D399]" aria-hidden="true" />
+                </button>
+              </div>
+
+              <div className="rounded-3xl bg-[#271820] border border-[#422A36] p-6 flex flex-col justify-between">
+                <div>
+                  <p className="text-xs text-[#FDE68A] font-medium mb-2">
+                    8 Safe Stars · Fast 2-Player Race
+                  </p>
+                  <h3 className="font-editorial text-2xl font-semibold text-white mb-2">
+                    Couple’s Ludo
+                  </h3>
+                  <p className="text-sm text-[#D6B8C4] leading-relaxed mb-6">
+                    Streamlined 2 tokens per player for snappy 5-minute matches. Roll a 6 to emerge
+                    from yard, capture your partner’s token for a bonus roll, and race into Goal.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleOpenGames('ludo')}
+                  className="min-h-[44px] px-4 py-2.5 rounded-xl bg-[#3E1B2A] hover:bg-[#522438] border border-[#6B324D] text-[#FFF0F5] text-xs font-semibold inline-flex items-center justify-between"
+                >
+                  <span>Race to Goal</span>
+                  <Sparkles className="w-3.5 h-3.5 text-[#FDE68A]" aria-hidden="true" />
+                </button>
+              </div>
+
               <div className="rounded-3xl bg-[#271820] border border-[#422A36] p-6 flex flex-col justify-between">
                 <div>
                   <p className="text-xs text-[#FDE68A] font-medium mb-2">

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import {
   applyTttMove,
   chooseSmartTttBotMove,
@@ -62,16 +62,19 @@ export function TicTacToeArena({
 
   const activeState = derivedOnlineState ?? localState;
 
+  const onScoreChangeRef = useRef(onScoreChange);
+  onScoreChangeRef.current = onScoreChange;
+
   // Report score updates to HUD
   useEffect(() => {
     if (isOnline && room) {
       if (isHost) {
-        onScoreChange(room.hostScore, room.guestScore);
+        onScoreChangeRef.current(room.hostScore, room.guestScore);
       } else {
-        onScoreChange(room.guestScore, room.hostScore);
+        onScoreChangeRef.current(room.guestScore, room.hostScore);
       }
     } else {
-      onScoreChange(localScores.x, localScores.o);
+      onScoreChangeRef.current(localScores.x, localScores.o);
     }
   }, [isOnline, isHost, room?.hostScore, room?.guestScore, localScores.x, localScores.o]);
 
@@ -184,7 +187,7 @@ export function TicTacToeArena({
         : 'Nkanyezi (O)';
 
   return (
-    <div className="w-full h-full flex flex-col items-center justify-center gap-4 py-3 sm:py-4 px-3 max-w-xl mx-auto">
+    <div className="w-full max-w-xl mx-auto flex flex-col items-center justify-start gap-4 py-3 sm:py-4 px-3 select-none">
       {/* Mode & Opponent Controls */}
       <div className="w-full flex flex-wrap items-center justify-between gap-2 bg-[#23171D] border border-[#3E2833] rounded-2xl p-2">
         <div className="flex items-center gap-1.5" role="group" aria-label="Tic-Tac-Toe rules">

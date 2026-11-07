@@ -202,3 +202,138 @@ test('roomStateCodec round-trips Tic-Tac-Toe and Card Lounge states within Fires
   assert.deepEqual(restoredCards, afterLead);
 });
 
+test('Snakes & Ladders climbs ladders, slides down snakes, bounces on overshoot, and round-trips codec', async () => {
+  const {
+    createInitialSnakesState,
+    applySnakesMove,
+    getTileGridCoordinates,
+    LADDERS,
+    SNAKES,
+  } = await import('./snakesLogic');
+  const { snakesStateToMap, snakesStateFromMap } = await import('./roomStateCodec');
+
+  // Verify coordinates for zigzag
+  const tile1 = getTileGridCoordinates(1);
+  assert.deepEqual(tile1, { col: 0, row: 0 });
+  const tile10 = getTileGridCoordinates(10);
+  assert.deepEqual(tile10, { col: 9, row: 0 });
+  const tile11 = getTileGridCoordinates(11);
+  assert.deepEqual(tile11, { col: 9, row: 1 }); // Zigzag reversed!
+  const tile20 = getTileGridCoordinates(20);
+  assert.deepEqual(tile20, { col: 0, row: 1 });
+  const tile100 = getTileGridCoordinates(100);
+  assert.deepEqual(tile100, { col: 0, row: 9 });
+
+  // Test Ladder climb (4 -> 25)
+  let state = createInitialSnakesState();
+  const roll3 = applySnakesMove(state, 3); // 1 + 3 = 4 -> climbs to 25!
+  assert.equal(roll3.nextState.p1Pos, 25);
+  assert.equal(roll3.landedSpecial?.kind, 'ladder');
+  assert.equal(roll3.nextState.turnSeat, 1); // Not 6, so turn passed to P2
+
+  // Test Snake slide (17 -> 7)
+  let p2State = roll3.nextState;
+  p2State = { ...p2State, p2Pos: 13 };
+  const snakeMove = applySnakesMove(p2State, 4); // 13 + 4 = 17 -> slides to 7!
+  assert.equal(snakeMove.nextState.p2Pos, 7);
+  assert.equal(snakeMove.landedSpecial?.kind, 'snake');
+
+  // Test 6 grants extra turn
+  const rollSix = applySnakesMove(createInitialSnakesState(), 6);
+  assert.equal(rollSix.rolledSix, true);
+  assert.equal(rollSix.nextState.turnSeat, 0); // Still P1 turn!
+
+  // Test overshoot bounce (from 98, roll 4 -> reaches 100, bounces 2 to 98)
+  const nearEndState = {
+    ...createInitialSnakesState(),
+    p1Pos: 98,
+  };
+  const bounceMove = applySnakesMove(nearEndState, 4);
+  assert.equal(bounceMove.bounced, true);
+  assert.equal(bounceMove.nextState.p1Pos, 98);
+
+  // Test exact win at 100
+  const winMove = applySnakesMove(nearEndState, 2);
+  assert.equal(winMove.won, true);
+  assert.equal(winMove.nextState.winner, 0);
+  assert.equal(winMove.nextState.p1Pos, 100);
+
+  // Test codec round-trip
+  const snakesMap = snakesStateToMap(winMove.nextState);
+  assert.equal(snakesMap.p1Pos, 100);
+  assert.equal(snakesMap.winnerSeat, 0);
+  const restored = snakesStateFromMap(snakesMap, winMove.nextState.turnSeat);
+  assert.equal(restored.p1Pos, 100);
+  assert.equal(restored.winner, 0);
+});
+
+test('2-Player Ludo enforces base exits, captures, safe squares, home goals, and round-trips codec', async () => {
+  const {
+    createInitialLudoState,
+    handleLudoDiceRoll,
+    executeLudoTokenMove,
+    getDestinationSquare,
+    SAFE_SQUARES,
+  } = await import('./ludoLogic');
+  const { ludoStateToMap, ludoStateFromMap } = await import('./roomStateCodec');
+
+  let state = createInitialLudoState();
+
+  // Non-6 cannot exit base (-1)
+  const destNonSix = getDestinationSquare(-1, 3, 0);
+  assert.equal(destNonSix, null);
+
+  // 6 exits base to Square 0 for P0
+  const destSix = getDestinationSquare(-1, 6, 0);
+  assert.equal(destSix, 0);
+
+  // 6 exits base to Square 26 for P1
+  const destSixP1 = getDestinationSquare(-1, 6, 1);
+  assert.equal(destSixP1, 26);
+
+  // Roll a 6 and move out
+  const rollRes = handleLudoDiceRoll(state, 6);
+  assert.equal(rollRes.nextState.phase, 'need_move');
+  assert.deepEqual(rollRes.legalTokens, [0, 1]);
+
+  // Execute token 0 move
+  const moveRes = executeLudoTokenMove(rollRes.nextState, 0);
+  assert.equal(moveRes.nextState.tokens[0], 0);
+  assert.equal(moveRes.bonusTurn, true); // Extra roll on 6
+  assert.equal(moveRes.nextState.turnSeat, 0); // P0 keeps turn!
+
+  // Capture test: P1 token at square 10 (not safe). P0 token at square 6 rolls 4 -> lands on 10!
+  let captureBoard = {
+    ...createInitialLudoState(),
+    tokens: [6, -1, 10, -1] as [number, number, number, number],
+    turnSeat: 0 as const,
+    phase: 'need_move' as const,
+    lastDice: 4,
+  };
+  const captureRes = executeLudoTokenMove(captureBoard, 0);
+  assert.equal(captureRes.capturedOpponent, true);
+  assert.equal(captureRes.nextState.tokens[0], 10);
+  assert.equal(captureRes.nextState.tokens[2], -1); // P1 token sent back to base!
+  assert.equal(captureRes.bonusTurn, true); // Bonus roll on capture!
+
+  // Safe square test: Square 8 is safe. P0 lands on 8 while P1 is on 8 -> NO capture!
+  assert.equal(SAFE_SQUARES.has(8), true);
+  let safeBoard = {
+    ...createInitialLudoState(),
+    tokens: [5, -1, 8, -1] as [number, number, number, number],
+    turnSeat: 0 as const,
+    phase: 'need_move' as const,
+    lastDice: 3,
+  };
+  const safeRes = executeLudoTokenMove(safeBoard, 0);
+  assert.equal(safeRes.capturedOpponent, false);
+  assert.equal(safeRes.nextState.tokens[2], 8); // P1 token remains intact!
+
+  // Codec round-trip
+  const ludoMap = ludoStateToMap(captureRes.nextState);
+  assert.equal(ludoMap.tokens[0], 10);
+  assert.equal(ludoMap.tokens[2], -1);
+  const restored = ludoStateFromMap(ludoMap, captureRes.nextState.turnSeat);
+  assert.deepEqual(restored.tokens, captureRes.nextState.tokens);
+});
+

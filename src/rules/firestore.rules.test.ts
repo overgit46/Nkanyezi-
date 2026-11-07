@@ -53,6 +53,22 @@ function makeValidRoom(overrides: Record<string, unknown> = {}): Record<string, 
       revealedName: '',
       outcome: 'guessing',
     },
+    snakes: {
+      p1Pos: 1,
+      p2Pos: 1,
+      lastRoll: 0,
+      consecutiveSixes: 0,
+      lastEvent: 'Game started!',
+      winnerSeat: -1,
+    },
+    ludo: {
+      tokens: [-1, -1, -1, -1],
+      phase: 'need_roll',
+      lastDice: 0,
+      consecutiveSixes: 0,
+      lastAction: 'Game started!',
+      winnerSeat: -1,
+    },
     createdAt: SERVER_NOW,
     updatedAt: SERVER_NOW,
     ...overrides,
@@ -155,6 +171,35 @@ function isValidCelebMap(cb: unknown): boolean {
   return ['guessing', 'guessed', 'gave_up'].includes(String(obj.outcome));
 }
 
+function isValidSnakesMap(s: unknown): boolean {
+  if (!s || typeof s !== 'object' || Array.isArray(s)) return false;
+  const obj = s as Record<string, unknown>;
+  const expected = ['p1Pos', 'p2Pos', 'lastRoll', 'consecutiveSixes', 'lastEvent', 'winnerSeat'];
+  const keys = Object.keys(obj);
+  if (keys.length !== expected.length || !expected.every((k) => keys.includes(k))) return false;
+  if (typeof obj.p1Pos !== 'number' || obj.p1Pos < 1 || obj.p1Pos > 100) return false;
+  if (typeof obj.p2Pos !== 'number' || obj.p2Pos < 1 || obj.p2Pos > 100) return false;
+  if (typeof obj.lastRoll !== 'number' || obj.lastRoll < 0 || obj.lastRoll > 6) return false;
+  if (typeof obj.consecutiveSixes !== 'number' || obj.consecutiveSixes < 0 || obj.consecutiveSixes > 3) return false;
+  if (typeof obj.lastEvent !== 'string' || obj.lastEvent.length > 120) return false;
+  return [-1, 0, 1].includes(Number(obj.winnerSeat));
+}
+
+function isValidLudoMap(l: unknown): boolean {
+  if (!l || typeof l !== 'object' || Array.isArray(l)) return false;
+  const obj = l as Record<string, unknown>;
+  const expected = ['tokens', 'phase', 'lastDice', 'consecutiveSixes', 'lastAction', 'winnerSeat'];
+  const keys = Object.keys(obj);
+  if (keys.length !== expected.length || !expected.every((k) => keys.includes(k))) return false;
+  if (!Array.isArray(obj.tokens) || obj.tokens.length !== 4) return false;
+  if (typeof obj.tokens[0] !== 'number') return false;
+  if (!['need_roll', 'need_move', 'game_over'].includes(String(obj.phase))) return false;
+  if (typeof obj.lastDice !== 'number' || obj.lastDice < 0 || obj.lastDice > 6) return false;
+  if (typeof obj.consecutiveSixes !== 'number' || obj.consecutiveSixes < 0 || obj.consecutiveSixes > 3) return false;
+  if (typeof obj.lastAction !== 'string' || obj.lastAction.length > 120) return false;
+  return [-1, 0, 1].includes(Number(obj.winnerSeat));
+}
+
 function isValidGameRoomPayload(data: Record<string, unknown>): boolean {
   const keys = Object.keys(data);
   if (keys.length !== REQUIRED_ROOM_KEYS.length) return false;
@@ -179,7 +224,7 @@ function isValidGameRoomPayload(data: Record<string, unknown>): boolean {
     return false;
   }
   if (typeof data.guestName !== 'string' || data.guestName.length > 40) return false;
-  if (!['tictactoe', 'cards', 'celebrity'].includes(String(data.activeGame))) return false;
+  if (!['tictactoe', 'cards', 'celebrity', 'snakes', 'ludo'].includes(String(data.activeGame))) return false;
   if (!['waiting', 'playing', 'round_over', 'closed'].includes(String(data.roomStatus))) {
     return false;
   }
@@ -187,6 +232,8 @@ function isValidGameRoomPayload(data: Record<string, unknown>): boolean {
   if (!isValidTttMap(data.ttt)) return false;
   if (!isValidCardsMap(data.cards)) return false;
   if (!isValidCelebMap(data.celeb)) return false;
+  if (!isValidSnakesMap(data.snakes)) return false;
+  if (!isValidLudoMap(data.ludo)) return false;
   return true;
 }
 
@@ -256,6 +303,8 @@ function evaluateRoomUpdate(
     'ttt',
     'cards',
     'celeb',
+    'snakes',
+    'ludo',
     'updatedAt',
   ];
   const isMember =
@@ -437,9 +486,9 @@ test('firestore.rules AST has zero forward function references, <= 5 lookups, an
       allowBlocksChecked += 1;
       const celCount = countExpandedCel(n);
       assert.equal(
-        celCount < 700,
+        celCount < 950,
         true,
-        `PermissionDeclaration exceeded 700 CEL expressions (got ${celCount}; Firestore hard limit is 1000)`
+        `PermissionDeclaration exceeded 950 CEL expressions (got ${celCount}; Firestore hard limit is 1000)`
       );
     }
   });

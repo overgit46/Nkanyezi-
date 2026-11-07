@@ -23,7 +23,15 @@ import {
   TttRoomMap,
   tttStateFromMap,
   tttStateToMap,
+  SnakesRoomMap,
+  snakesStateFromMap,
+  snakesStateToMap,
+  LudoRoomMap,
+  ludoStateFromMap,
+  ludoStateToMap,
 } from '../games/roomStateCodec';
+import { createInitialSnakesState, SnakesState } from '../games/snakesLogic';
+import { createInitialLudoState, LudoState } from '../games/ludoLogic';
 
 export {
   cardStateToMap,
@@ -31,10 +39,12 @@ export {
   MAX_QA_LEN,
   MAX_REVEALED_NAME_LEN,
   tttStateToMap,
+  snakesStateToMap,
+  ludoStateToMap,
 };
-export type { CardsRoomMap, CelebRoomMap, TttRoomMap };
+export type { CardsRoomMap, CelebRoomMap, TttRoomMap, SnakesRoomMap, LudoRoomMap };
 
-export type ActiveGameKind = 'tictactoe' | 'cards' | 'celebrity';
+export type ActiveGameKind = 'tictactoe' | 'cards' | 'celebrity' | 'snakes' | 'ludo';
 export type RoomStatus = 'waiting' | 'playing' | 'round_over' | 'closed';
 
 // Blueprint-synchronized validation constants
@@ -57,6 +67,8 @@ export interface GameRoomDoc {
   ttt: TttRoomMap;
   cards: CardsRoomMap;
   celeb: CelebRoomMap;
+  snakes: SnakesRoomMap;
+  ludo: LudoRoomMap;
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
 }
@@ -98,6 +110,14 @@ export function cardStateFromRoom(room: GameRoomDoc): CardTableState {
   return cardStateFromMap(room.cards, room.turnSeat);
 }
 
+export function snakesStateFromRoom(room: GameRoomDoc): SnakesState {
+  return snakesStateFromMap(room.snakes, room.turnSeat);
+}
+
+export function ludoStateFromRoom(room: GameRoomDoc): LudoState {
+  return ludoStateFromMap(room.ludo, room.turnSeat);
+}
+
 export function cardStateToRoomFields(table: CardTableState): {
   turnSeat: number;
   cards: CardsRoomMap;
@@ -117,6 +137,8 @@ export async function createMultiplayerRoom(
   const hostName = sanitizeDisplayName(rawHostName, 'Player 1');
   const initialTtt = createInitialTttState('bolt', 'X');
   const initialCards = createCardGame('crazy8', 4);
+  const initialSnakes = createInitialSnakesState();
+  const initialLudo = createInitialLudoState();
 
   const roomPath = `rooms/${roomCode}`;
 
@@ -143,6 +165,8 @@ export async function createMultiplayerRoom(
       revealedName: '',
       outcome: 'guessing' as const,
     },
+    snakes: snakesStateToMap(initialSnakes),
+    ludo: ludoStateToMap(initialLudo),
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   };
