@@ -47,9 +47,16 @@ function parseUrlLaunchConfig(): {
     gameParam === 'cards' ||
     gameParam === 'celebrity' ||
     gameParam === 'snakes' ||
-    gameParam === 'ludo'
+    gameParam === 'ludo' ||
+    gameParam === 'connect4' ||
+    gameParam === 'battleship' ||
+    gameParam === 'mancala' ||
+    gameParam === 'dots' ||
+    gameParam === 'checkers' ||
+    gameParam === 'memory' ||
+    gameParam === 'wordduel'
       ? gameParam
-      : 'cards';
+      : 'connect4';
 
   return {
     startInGames: mode === 'games' || Boolean(gameParam),

@@ -224,7 +224,7 @@ function isValidGameRoomPayload(data: Record<string, unknown>): boolean {
     return false;
   }
   if (typeof data.guestName !== 'string' || data.guestName.length > 40) return false;
-  if (!['tictactoe', 'cards', 'celebrity', 'snakes', 'ludo'].includes(String(data.activeGame))) return false;
+  if (!['tictactoe', 'cards', 'celebrity', 'snakes', 'ludo', 'connect4', 'battleship', 'mancala', 'dots', 'checkers', 'memory', 'wordduel'].includes(String(data.activeGame))) return false;
   if (!['waiting', 'playing', 'round_over', 'closed'].includes(String(data.roomStatus))) {
     return false;
   }

@@ -41,7 +41,7 @@
         "activeGame": {
           "type": "string",
           "description": "Currently selected game in the room.",
-          "enum": ["tictactoe", "cards", "celebrity", "snakes", "ludo"],
+          "enum": ["tictactoe", "cards", "celebrity", "snakes", "ludo", "connect4", "battleship", "mancala", "dots", "checkers", "memory", "wordduel"],
           "maxLength": 20
         },
         "roomStatus": {

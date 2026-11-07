@@ -13,6 +13,13 @@ import { CardLoungeTable } from './CardLoungeTable';
 import { CelebrityGuessArena } from './CelebrityGuessArena';
 import { SnakesArena } from './SnakesArena';
 import { LudoArena } from './LudoArena';
+import { ConnectFourArena } from './ConnectFourArena';
+import { BattleshipArena } from './BattleshipArena';
+import { MancalaArena } from './MancalaArena';
+import { DotsAndBoxesArena } from './DotsAndBoxesArena';
+import { CheckersArena } from './CheckersArena';
+import { MemoryMatchArena } from './MemoryMatchArena';
+import { WordDuelArena } from './WordDuelArena';
 import { LiveRoomModal } from './LiveRoomModal';
 import { PlayingCardView } from './PlayingCardView';
 
@@ -36,9 +43,44 @@ const GAME_CATALOG: readonly {
   subtitle: string;
 }[] = [
   {
+    id: 'connect4',
+    title: 'Connect Four',
+    subtitle: '7×6 Mahogany Rack · Ruby vs Gold Dropping Discs',
+  },
+  {
+    id: 'battleship',
+    title: 'Battleship Command',
+    subtitle: 'Dual Tactical Radar · Naval Fleet Strikes & Pegs',
+  },
+  {
+    id: 'mancala',
+    title: 'Mancala Kalah',
+    subtitle: '48 Gemstones · Ancient Carved Wooden Board',
+  },
+  {
+    id: 'dots',
+    title: 'Dots & Boxes',
+    subtitle: 'Fountain Pen Ink · Monogram Wax Seals & Chains',
+  },
+  {
+    id: 'checkers',
+    title: 'Checkers (Draughts)',
+    subtitle: 'Walnut & Maple · Crowned Kings & Multi-Jumps',
+  },
+  {
+    id: 'memory',
+    title: 'Memory Match',
+    subtitle: 'Green Baize Felt · 16 Couple Keepsake Cards',
+  },
+  {
+    id: 'wordduel',
+    title: 'Word Duel Boggle',
+    subtitle: '16 Letter Dice · 90s Adjacent Path Word Hunt',
+  },
+  {
     id: 'snakes',
     title: 'Snakes & Ladders',
-    subtitle: '100 Squares · Couple Milestones & Slides',
+    subtitle: '100 Squares · Vintage Board Milestones & Slides',
   },
   {
     id: 'ludo',
@@ -48,7 +90,7 @@ const GAME_CATALOG: readonly {
   {
     id: 'cards',
     title: 'Card Lounge · 4P',
-    subtitle: 'Crazy Eights · Action Switch · Hearts Trump',
+    subtitle: 'Crazy Eights · Monaco Baize & Leather Armrests',
   },
   {
     id: 'celebrity',
@@ -61,6 +103,35 @@ const GAME_CATALOG: readonly {
     subtitle: '3-Piece Disappearing & Classic 3×3',
   },
 ];
+
+export function getGameShortName(id: ActiveGameKind): string {
+  switch (id) {
+    case 'connect4':
+      return 'Connect 4';
+    case 'battleship':
+      return 'Battleship';
+    case 'mancala':
+      return 'Mancala';
+    case 'dots':
+      return 'Dots & Boxes';
+    case 'checkers':
+      return 'Checkers';
+    case 'memory':
+      return 'Memory';
+    case 'wordduel':
+      return 'Word Duel';
+    case 'snakes':
+      return 'Snakes';
+    case 'ludo':
+      return 'Ludo';
+    case 'cards':
+      return 'Cards';
+    case 'celebrity':
+      return 'Celebrity';
+    case 'tictactoe':
+      return 'Tic-Tac-Toe';
+  }
+}
 
 export function GameArcadeShell({
   initialGame = 'cards',
@@ -299,13 +370,13 @@ export function GameArcadeShell({
                   fontWeight="600"
                   letterSpacing="1.6"
                 >
-                  SNAKES · LUDO · CARDS · CELEBRITY · TIC-TAC-TOE
+                  SNAKES · LUDO · CARDS · CELEBRITY · CONNECT 4 · BATTLESHIP · MANCALA · DOTS · CHECKERS · MEMORY · WORD DUEL
                 </text>
               </svg>
 
               {/* Interactive Game Picker Cards */}
               <div
-                className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 mb-6"
+                className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 mb-6 max-h-[380px] overflow-y-auto pr-1"
                 role="radiogroup"
                 aria-label="Choose a game to play"
               >
@@ -362,6 +433,85 @@ export function GameArcadeShell({
             {/* Right Interactive Centerpiece Showcase */}
             <div className="lg:col-span-5 flex items-center justify-center">
               <div className="relative w-full max-w-[360px] rounded-3xl bg-[#1D1219] border-4 border-[#3E242D] p-6 shadow-2xl flex flex-col items-center">
+                {selectedGame === 'connect4' && (
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#FB7185] to-[#9F1239] border-2 border-[#FDA4AF] flex items-center justify-center text-xs font-bold shadow-lg">♥</div>
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#FDE68A] to-[#B45309] border-2 border-[#FEF3C7] flex items-center justify-center text-xs font-bold shadow-lg">★</div>
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#FB7185] to-[#9F1239] border-2 border-[#FDA4AF] flex items-center justify-center text-xs font-bold shadow-lg">♥</div>
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#FDE68A] to-[#B45309] border-2 border-[#FEF3C7] flex items-center justify-center text-xs font-bold shadow-lg">★</div>
+                  </div>
+                )}
+
+                {selectedGame === 'battleship' && (
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-12 h-12 rounded-2xl bg-[#0F172A] border-2 border-[#38BDF8] flex items-center justify-center text-2xl shadow-xl">
+                      🚢
+                    </div>
+                    <div className="w-8 h-8 rounded-full bg-[#E11D48] flex items-center justify-center text-white font-mono text-xs font-bold shadow-md animate-pulse">
+                      HIT
+                    </div>
+                    <div className="w-12 h-12 rounded-2xl bg-[#0F172A] border-2 border-[#10B981] flex items-center justify-center text-2xl shadow-xl">
+                      🎯
+                    </div>
+                  </div>
+                )}
+
+                {selectedGame === 'mancala' && (
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="w-14 h-14 rounded-full bg-[#26150D] border-2 border-[#D97706] flex items-center justify-center gap-1 shadow-xl">
+                      <span className="w-2.5 h-2.5 rounded-full bg-[#38BDF8]" />
+                      <span className="w-2.5 h-2.5 rounded-full bg-[#F43F5E]" />
+                      <span className="w-2.5 h-2.5 rounded-full bg-[#FBBF24]" />
+                    </div>
+                    <span className="text-xl font-serif text-[#FDE68A]">🏺</span>
+                    <div className="w-14 h-14 rounded-full bg-[#26150D] border-2 border-[#FDA4AF] flex items-center justify-center gap-1 shadow-xl">
+                      <span className="w-2.5 h-2.5 rounded-full bg-[#34D399]" />
+                      <span className="w-2.5 h-2.5 rounded-full bg-[#A855F7]" />
+                      <span className="w-2.5 h-2.5 rounded-full bg-[#FB923C]" />
+                    </div>
+                  </div>
+                )}
+
+                {selectedGame === 'dots' && (
+                  <div className="w-20 h-20 rounded-2xl bg-[#FAF6EE] border-2 border-[#3E2319] flex items-center justify-center shadow-xl mb-4">
+                    <span className="font-serif font-black text-3xl text-[#BE123C]">N</span>
+                  </div>
+                )}
+
+                {selectedGame === 'checkers' && (
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#2563EB] to-[#172554] border-2 border-[#60A5FA] flex items-center justify-center text-lg text-[#FDE68A] shadow-xl">
+                      👑
+                    </div>
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#FB7185] to-[#881337] border-2 border-[#FDA4AF] flex items-center justify-center text-lg text-[#FDE68A] shadow-xl">
+                      👑
+                    </div>
+                  </div>
+                )}
+
+                {selectedGame === 'memory' && (
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="w-11 h-14 rounded-xl bg-gradient-to-br from-[#1E293B] to-[#0F172A] border-2 border-[#38BDF8] flex items-center justify-center text-lg shadow-lg">
+                      ★
+                    </div>
+                    <div className="w-11 h-14 rounded-xl bg-gradient-to-br from-[#1E293B] to-[#0F172A] border-2 border-[#38BDF8] flex items-center justify-center text-lg shadow-lg">
+                      🌹
+                    </div>
+                    <div className="w-11 h-14 rounded-xl bg-gradient-to-br from-[#881337] to-[#4C0519] border-2 border-[#FDA4AF]/50 flex items-center justify-center text-xs text-[#FDE68A] shadow-lg">
+                      ★
+                    </div>
+                  </div>
+                )}
+
+                {selectedGame === 'wordduel' && (
+                  <div className="flex items-center gap-1.5 mb-4 font-serif font-black text-xl">
+                    <div className="w-10 h-10 rounded-xl bg-[#FAF5EE] text-[#1E293B] border border-[#B45309] flex items-center justify-center shadow-md">L</div>
+                    <div className="w-10 h-10 rounded-xl bg-[#FAF5EE] text-[#1E293B] border border-[#B45309] flex items-center justify-center shadow-md">O</div>
+                    <div className="w-10 h-10 rounded-xl bg-[#FAF5EE] text-[#1E293B] border border-[#B45309] flex items-center justify-center shadow-md">V</div>
+                    <div className="w-10 h-10 rounded-xl bg-[#FAF5EE] text-[#1E293B] border border-[#B45309] flex items-center justify-center shadow-md">E</div>
+                  </div>
+                )}
+
                 {selectedGame === 'snakes' && (
                   <div className="flex flex-col items-center mb-4">
                     <div className="flex items-center gap-3">
@@ -409,22 +559,10 @@ export function GameArcadeShell({
                 )}
 
                 <p className="font-editorial text-xl font-semibold text-[#FFF7FA] text-center">
-                  {selectedGame === 'snakes'
-                    ? '100-Square Couple Snakes & Ladders'
-                    : selectedGame === 'ludo'
-                      ? 'Safe Stars · Fast 2-Player Ludo'
-                      : selectedGame === 'cards'
-                        ? '4-Player Crazy Eights, Switch & Hearts'
-                        : selectedGame === 'celebrity'
-                          ? '48 Celebrity Cards · Secret Role Swap'
-                          : 'Bolt 3-Piece & Classic Tic-Tac-Toe'}
+                  {GAME_CATALOG.find((g) => g.id === selectedGame)?.title ?? 'Game Lounge'}
                 </p>
                 <p className="text-xs text-[#DEC0CC] text-center mt-1">
-                  {selectedGame === 'snakes'
-                    ? 'Climb romantic ladders, slide down playful snakes, roll again on 6, exact bounce on 100.'
-                    : selectedGame === 'ludo'
-                      ? '2 tokens each for snappy ~5-min matches, 8 safe stars, bonus turns on 6 or capture.'
-                      : 'Play instantly vs smart bots, pass-and-play on one phone, or sync live across both phones.'}
+                  {GAME_CATALOG.find((g) => g.id === selectedGame)?.subtitle ?? 'Play together or solo with partner AI.'}
                 </p>
               </div>
             </div>
@@ -455,27 +593,19 @@ export function GameArcadeShell({
                 >
                   ← Lobby
                 </button>
-                <div className="hidden md:flex items-center gap-1.5 flex-wrap">
+                <div className="hidden lg:flex items-center gap-1.5 flex-wrap max-h-12 overflow-y-auto">
                   {GAME_CATALOG.map((g) => (
                     <button
                       key={g.id}
                       type="button"
                       onClick={() => handleSelectGameTab(g.id)}
-                      className={`min-h-[40px] px-3 rounded-xl text-xs font-semibold whitespace-nowrap shrink-0 transition-colors ${
+                      className={`min-h-[38px] px-2.5 rounded-xl text-xs font-semibold whitespace-nowrap shrink-0 transition-colors ${
                         selectedGame === g.id
-                          ? 'bg-[#D81B60] text-white'
+                          ? 'bg-[#D81B60] text-white shadow-sm'
                           : 'bg-[#2A1922] text-[#CDB0BC] hover:text-white'
                       }`}
                     >
-                      {g.id === 'snakes'
-                        ? 'Snakes & Ladders'
-                        : g.id === 'ludo'
-                          ? 'Ludo'
-                          : g.id === 'cards'
-                            ? 'Cards (4P)'
-                            : g.id === 'celebrity'
-                              ? 'Celebrity'
-                              : 'Tic-Tac-Toe'}
+                      {getGameShortName(g.id)}
                     </button>
                   ))}
                 </div>
@@ -576,7 +706,7 @@ export function GameArcadeShell({
             </div>
 
             {/* Mobile-only scrolling switcher row so zero tabs clip on narrow phones */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:hidden">
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 lg:hidden">
               {GAME_CATALOG.map((g) => (
                 <button
                   key={g.id}
@@ -584,19 +714,11 @@ export function GameArcadeShell({
                   onClick={() => handleSelectGameTab(g.id)}
                   className={`min-h-[38px] px-3 rounded-xl text-xs font-semibold whitespace-nowrap shrink-0 transition-colors ${
                     selectedGame === g.id
-                      ? 'bg-[#D81B60] text-white'
+                      ? 'bg-[#D81B60] text-white shadow-sm'
                       : 'bg-[#2A1922] text-[#CDB0BC] hover:text-white'
                   }`}
                 >
-                  {g.id === 'snakes'
-                    ? 'Snakes'
-                    : g.id === 'ludo'
-                      ? 'Ludo'
-                      : g.id === 'cards'
-                        ? 'Cards'
-                        : g.id === 'celebrity'
-                          ? 'Celebrity'
-                          : 'Tic-Tac-Toe'}
+                  {getGameShortName(g.id)}
                 </button>
               ))}
             </div>
@@ -604,6 +726,97 @@ export function GameArcadeShell({
 
           {/* Unobstructed Active Playfield with full vertical scrolling */}
           <main className="flex-1 overflow-y-auto overscroll-contain flex flex-col items-center justify-start py-4 px-2 sm:px-6 pb-28">
+            {selectedGame === 'connect4' && (
+              <ConnectFourArena
+                room={room}
+                userUid={user?.uid ?? null}
+                restartTrigger={restartNonce}
+                onScoreUpdate={(s: { you: number; partner: number }) => handleScoreChange(s.you, s.partner)}
+                onGameOver={(headline: string, subline: string) => {
+                  setMatchSummary({ headline, subline });
+                  setShellState('gameover');
+                }}
+              />
+            )}
+
+            {selectedGame === 'battleship' && (
+              <BattleshipArena
+                room={room}
+                userUid={user?.uid ?? null}
+                restartTrigger={restartNonce}
+                onScoreUpdate={(s: { you: number; partner: number }) => handleScoreChange(s.you, s.partner)}
+                onGameOver={(headline: string, subline: string) => {
+                  setMatchSummary({ headline, subline });
+                  setShellState('gameover');
+                }}
+              />
+            )}
+
+            {selectedGame === 'mancala' && (
+              <MancalaArena
+                room={room}
+                userUid={user?.uid ?? null}
+                restartTrigger={restartNonce}
+                onScoreUpdate={(s: { you: number; partner: number }) => handleScoreChange(s.you, s.partner)}
+                onGameOver={(headline: string, subline: string) => {
+                  setMatchSummary({ headline, subline });
+                  setShellState('gameover');
+                }}
+              />
+            )}
+
+            {selectedGame === 'dots' && (
+              <DotsAndBoxesArena
+                room={room}
+                userUid={user?.uid ?? null}
+                restartTrigger={restartNonce}
+                onScoreUpdate={(s: { you: number; partner: number }) => handleScoreChange(s.you, s.partner)}
+                onGameOver={(headline: string, subline: string) => {
+                  setMatchSummary({ headline, subline });
+                  setShellState('gameover');
+                }}
+              />
+            )}
+
+            {selectedGame === 'checkers' && (
+              <CheckersArena
+                room={room}
+                userUid={user?.uid ?? null}
+                restartTrigger={restartNonce}
+                onScoreUpdate={(s: { you: number; partner: number }) => handleScoreChange(s.you, s.partner)}
+                onGameOver={(headline: string, subline: string) => {
+                  setMatchSummary({ headline, subline });
+                  setShellState('gameover');
+                }}
+              />
+            )}
+
+            {selectedGame === 'memory' && (
+              <MemoryMatchArena
+                room={room}
+                userUid={user?.uid ?? null}
+                restartTrigger={restartNonce}
+                onScoreUpdate={(s: { you: number; partner: number }) => handleScoreChange(s.you, s.partner)}
+                onGameOver={(headline: string, subline: string) => {
+                  setMatchSummary({ headline, subline });
+                  setShellState('gameover');
+                }}
+              />
+            )}
+
+            {selectedGame === 'wordduel' && (
+              <WordDuelArena
+                room={room}
+                userUid={user?.uid ?? null}
+                restartTrigger={restartNonce}
+                onScoreUpdate={(s: { you: number; partner: number }) => handleScoreChange(s.you, s.partner)}
+                onGameOver={(headline: string, subline: string) => {
+                  setMatchSummary({ headline, subline });
+                  setShellState('gameover');
+                }}
+              />
+            )}
+
             {selectedGame === 'snakes' && (
               <SnakesArena
                 room={room}

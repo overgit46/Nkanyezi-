@@ -44,7 +44,19 @@ export {
 };
 export type { CardsRoomMap, CelebRoomMap, TttRoomMap, SnakesRoomMap, LudoRoomMap };
 
-export type ActiveGameKind = 'tictactoe' | 'cards' | 'celebrity' | 'snakes' | 'ludo';
+export type ActiveGameKind =
+  | 'tictactoe'
+  | 'cards'
+  | 'celebrity'
+  | 'snakes'
+  | 'ludo'
+  | 'connect4'
+  | 'battleship'
+  | 'mancala'
+  | 'dots'
+  | 'checkers'
+  | 'memory'
+  | 'wordduel';
 export type RoomStatus = 'waiting' | 'playing' | 'round_over' | 'closed';
 
 // Blueprint-synchronized validation constants

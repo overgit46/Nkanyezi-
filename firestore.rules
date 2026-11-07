@@ -139,7 +139,7 @@ service cloud.firestore {
         && d.hostName is string && d.hostName.size() >= 1 && d.hostName.size() <= 40
         && isValidUidOrEmpty(d.guestUid)
         && d.guestName is string && d.guestName.size() <= 40
-        && d.activeGame in ['tictactoe', 'cards', 'celebrity', 'snakes', 'ludo']
+        && d.activeGame in ['tictactoe', 'cards', 'celebrity', 'snakes', 'ludo', 'connect4', 'battleship', 'mancala', 'dots', 'checkers', 'memory', 'wordduel']
         && d.roomStatus in ['waiting', 'playing', 'round_over', 'closed']
         && d.turnSeat in [0, 1, 2, 3]
         && d.hostScore is number && d.hostScore >= 0 && d.hostScore <= 9999
