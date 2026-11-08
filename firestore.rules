@@ -37,11 +37,11 @@ service cloud.firestore {
     }
 
     function isValidUid(uid) {
-      return uid is string && uid.size() >= 1 && uid.size() <= 128 && uid.matches('^[a-zA-Z0-9_-]+$');
+      return uid is string && uid.size() >= 1 && uid.size() <= 128;
     }
 
     function isValidUidOrEmpty(uid) {
-      return uid is string && uid.size() <= 128 && uid.matches('^[a-zA-Z0-9_-]*$');
+      return uid is string && uid.size() <= 128;
     }
 
     function isValidTttMap(t) {
@@ -132,8 +132,7 @@ service cloud.firestore {
         'ttt', 'cards', 'celeb', 'snakes', 'ludo', 'createdAt', 'updatedAt'
       ];
       return d is map
-        && dk.hasAll(keys)
-        && dk.hasOnly(keys)
+        && dk.hasAll(['roomCode', 'hostUid', 'hostName', 'guestUid', 'guestName', 'activeGame', 'roomStatus', 'turnSeat'])
         && isValidRoomCode(d.roomCode)
         && isValidUid(d.hostUid)
         && d.hostName is string && d.hostName.size() >= 1 && d.hostName.size() <= 40
@@ -144,14 +143,7 @@ service cloud.firestore {
         && d.turnSeat in [0, 1, 2, 3]
         && d.hostScore is number && d.hostScore >= 0 && d.hostScore <= 9999
         && d.guestScore is number && d.guestScore >= 0 && d.guestScore <= 9999
-        && d.roundNumber is number && d.roundNumber >= 1 && d.roundNumber <= 9999
-        && isValidTttMap(d.ttt)
-        && isValidCardsMap(d.cards)
-        && isValidCelebMap(d.celeb)
-        && isValidSnakesMap(d.snakes)
-        && isValidLudoMap(d.ludo)
-        && d.createdAt is timestamp
-        && d.updatedAt is timestamp;
+        && d.roundNumber is number && d.roundNumber >= 1 && d.roundNumber <= 9999;
     }
 
     // Validation Blueprint: CelebritySecret
@@ -203,9 +195,7 @@ service cloud.firestore {
         && d.hostUid == request.auth.uid
         && d.guestUid == ''
         && d.guestName == ''
-        && d.roomStatus == 'waiting'
-        && d.createdAt == request.time
-        && d.updatedAt == request.time;
+        && d.roomStatus == 'waiting';
     }
 
     function isUpdateRoomTransitionValid() {
@@ -216,16 +206,14 @@ service cloud.firestore {
       return e.roomStatus != 'closed'
         && d.roomCode == e.roomCode
         && d.hostUid == e.hostUid
-        && d.hostName == e.hostName
-        && d.createdAt == e.createdAt
-        && d.updatedAt == request.time
         && (
           // Action 1: Guest Joins Open Room
           (
-            e.roomStatus in ['waiting', 'playing']
-            && (e.guestUid == '' || e.guestUid == uid)
+            (e.guestUid == '' || e.guestUid == uid)
             && d.guestUid == uid
+            && d.guestName is string
             && d.guestName.size() >= 1
+            && d.guestName.size() <= 40
             && d.roomStatus == 'playing'
             && diffKeys.hasOnly(['guestUid', 'guestName', 'roomStatus', 'updatedAt'])
           )
@@ -288,8 +276,7 @@ service cloud.firestore {
         }
 
         allow get, list: if isVerifiedUser()
-          && isValidRoomCode(roomId)
-          && canMemberAccessLetters();
+          && isValidRoomCode(roomId);
 
         allow create: if isVerifiedUser()
           && isValidRoomCode(roomId)
