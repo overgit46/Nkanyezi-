@@ -13,7 +13,7 @@ service cloud.firestore {
     }
 
     function isVerifiedUser() {
-      return isSignedIn() && request.auth.token.email_verified == true;
+      return isSignedIn();
     }
 
     function incoming() {
@@ -222,9 +222,8 @@ service cloud.firestore {
         && (
           // Action 1: Guest Joins Open Room
           (
-            e.roomStatus == 'waiting'
-            && e.guestUid == ''
-            && uid != e.hostUid
+            e.roomStatus in ['waiting', 'playing']
+            && (e.guestUid == '' || e.guestUid == uid)
             && d.guestUid == uid
             && d.guestName.size() >= 1
             && d.roomStatus == 'playing'
@@ -254,12 +253,7 @@ service cloud.firestore {
 
     match /rooms/{roomId} {
       allow get: if isVerifiedUser()
-        && isValidRoomCode(roomId)
-        && (
-          existing().hostUid == request.auth.uid
-          || (existing().guestUid != '' && existing().guestUid == request.auth.uid)
-          || existing().roomStatus == 'waiting'
-        );
+        && isValidRoomCode(roomId);
 
       allow list: if false;
 

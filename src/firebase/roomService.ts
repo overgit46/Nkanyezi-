@@ -231,7 +231,10 @@ export async function joinMultiplayerRoom(
   if (data.hostUid === guestUid || data.guestUid === guestUid) {
     return code; // Rejoining own active room
   }
-  if (data.roomStatus !== 'waiting' || data.guestUid !== '') {
+  if (data.roomStatus === 'closed') {
+    throw new Error('This room has been closed by the host. Please start a new room.');
+  }
+  if (data.guestUid !== '' && data.guestUid !== guestUid) {
     throw new Error('That room already has two players connected.');
   }
 

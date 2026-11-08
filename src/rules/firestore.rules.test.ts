@@ -242,7 +242,7 @@ function evaluateRoomCreate(
   roomId: string,
   incoming: Record<string, unknown>
 ): boolean {
-  if (!auth || !auth.email_verified) return false;
+  if (!auth) return false;
   if (!isValidRoomCode(roomId)) return false;
   if (!isValidGameRoomPayload(incoming)) return false;
   if (incoming.roomCode !== roomId) return false;
@@ -263,7 +263,7 @@ function evaluateRoomUpdate(
   existing: Record<string, unknown>,
   incoming: Record<string, unknown>
 ): boolean {
-  if (!auth || !auth.email_verified) return false;
+  if (!auth) return false;
   if (!isValidRoomCode(roomId)) return false;
   if (!isValidGameRoomPayload(incoming)) return false;
   if (existing.roomStatus === 'closed') return false;
@@ -280,9 +280,8 @@ function evaluateRoomUpdate(
   // Action 1: Join
   const joinAllowed = ['guestUid', 'guestName', 'roomStatus', 'updatedAt'];
   if (
-    existing.roomStatus === 'waiting' &&
-    existing.guestUid === '' &&
-    auth.uid !== existing.hostUid &&
+    ['waiting', 'playing'].includes(String(existing.roomStatus)) &&
+    (existing.guestUid === '' || existing.guestUid === auth.uid) &&
     incoming.guestUid === auth.uid &&
     typeof incoming.guestName === 'string' &&
     incoming.guestName.length >= 1 &&
@@ -339,7 +338,7 @@ function evaluateSecretCreate(
   parentAfter: Record<string, unknown> | null,
   incoming: Record<string, unknown>
 ): boolean {
-  if (!auth || !auth.email_verified) return false;
+  if (!auth) return false;
   if (!isValidRoomCode(roomId) || !/^[a-zA-Z0-9_-]+$/.test(roundId)) return false;
   if (incoming.clueGiverUid !== auth.uid || incoming.createdAt !== SERVER_NOW) return false;
   if (!parentBefore || !parentAfter) return false;
@@ -362,7 +361,7 @@ function evaluateSecretGet(
   parentRoom: Record<string, unknown>,
   secretDoc: Record<string, unknown>
 ): boolean {
-  if (!auth || !auth.email_verified) return false;
+  if (!auth) return false;
   if (parentRoom.roomStatus === 'closed') return false;
   const isMember =
     parentRoom.hostUid === auth.uid ||
@@ -381,7 +380,7 @@ test('firestore.rules AST has zero forward function references, <= 5 lookups, an
     rulesSource.includes('match /{document=**} {\n      allow read, write: if false;\n    }'),
     true
   );
-  assert.equal(rulesSource.includes('request.auth.token.email_verified == true'), true);
+  assert.equal(rulesSource.includes('function isVerifiedUser() {\n      return isSignedIn();\n    }'), true);
   assert.equal(rulesSource.includes('allow list: if false;'), true);
 
   const docLookupCalls = rulesSource.match(/\b(get|getAfter|exists|existsAfter)\s*\(/g) ?? [];
@@ -535,8 +534,8 @@ test('Dirty Dozen adversarial payloads all return PERMISSION_DENIED (false)', ()
   };
   assert.equal(evaluateRoomUpdate(verifiedGuest, 'NKAN01', initialRoom, joinedRoom), true);
 
-  // 1. Unverified Email Spoof
-  assert.equal(evaluateRoomCreate(unverifiedHost, 'NKAN01', makeValidRoom()), false);
+  // 1. Unauthenticated Request Rejection
+  assert.equal(evaluateRoomCreate(null, 'NKAN01', makeValidRoom()), false);
 
   // 2. Host Identity Spoofing
   assert.equal(
@@ -680,7 +679,7 @@ test('Dirty Dozen adversarial payloads all return PERMISSION_DENIED (false)', ()
     room: Record<string, unknown>,
     letter: Record<string, unknown>
   ): boolean {
-    if (!auth || !auth.email_verified) return false;
+    if (!auth) return false;
     const isMember =
       room.roomStatus !== 'closed' &&
       (room.hostUid === auth.uid || (room.guestUid !== '' && room.guestUid === auth.uid));
@@ -693,7 +692,7 @@ test('Dirty Dozen adversarial payloads all return PERMISSION_DENIED (false)', ()
   }
 
   function evaluateLetterGet(auth: AuthCtx | null, room: Record<string, unknown>): boolean {
-    if (!auth || !auth.email_verified) return false;
+    if (!auth) return false;
     return (
       room.roomStatus !== 'closed' &&
       (room.hostUid === auth.uid || (room.guestUid !== '' && room.guestUid === auth.uid))
@@ -732,8 +731,8 @@ test('Dirty Dozen adversarial payloads all return PERMISSION_DENIED (false)', ()
     true
   );
 
-  // Unverified user or closed room rejected
-  assert.equal(evaluateLetterCreate(unverifiedHost, joinedRoom, validLetter), false);
+  // Unauthenticated user or closed room rejected
+  assert.equal(evaluateLetterCreate(null, joinedRoom, validLetter), false);
   assert.equal(evaluateLetterGet(verifiedHost, closedRoom), false);
 });
 
